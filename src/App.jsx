@@ -157,7 +157,7 @@ function generateStory(id, category = null) {
     headline,
     summary,
     source,
-    link: `https://www.${source.toLowerCase().replace(/\s+/g, '')}.com/story/${id}`,
+    link: `https://news.google.com/search?q=${encodeURIComponent(headline)}`,
     category: catId,
     tags,
     time: `${Math.floor(Math.random() * 59) + 1}m ago`,
@@ -175,7 +175,7 @@ function generateCountryStory(id, countryId) {
     headline,
     summary,
     source,
-    link: `https://www.${source.toLowerCase().replace(/\s+/g, '')}.com/story/${id}`,
+    link: `https://news.google.com/search?q=${encodeURIComponent(headline)}`,
     category: 'world',
     tags: [countryId.toUpperCase()],
     time: `${Math.floor(Math.random() * 59) + 1}m ago`,
@@ -374,48 +374,62 @@ function NewsCard({ story }) {
   const accent = IMPACT_ACCENT[story.category] || ''
 
   return (
-    <article className={`relative bg-gradient-to-br ${gradient} rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 group border border-white/10`}>
-      {/* Ambient glow */}
-      <div className="absolute inset-0 opacity-30">
-        <div className="absolute top-[-40%] right-[-20%] w-[60%] h-[60%] bg-white rounded-full blur-[120px]" />
-        <div className="absolute bottom-[-30%] left-[-10%] w-[50%] h-[50%] bg-white rounded-full blur-[100px]" />
+    <article className={`relative bg-gradient-to-br ${gradient} h-full w-full flex flex-col justify-between p-6 rounded-2xl border border-white/10 overflow-hidden shadow-2xl group`}>
+      {/* Ambient glow effects */}
+      <div className="absolute inset-0 opacity-30 pointer-events-none">
+        <div className="absolute top-[-20%] right-[-10%] w-[80%] h-[75%] bg-white/10 rounded-full blur-[120px]" />
+        <div className="absolute bottom-[-10%] left-[-20%] w-[70%] h-[60%] bg-white/5 rounded-full blur-[100px]" />
       </div>
 
-      {/* Content */}
-      <div className="relative z-10 p-6">
-        {/* Meta row */}
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <span className="text-xl drop-shadow-lg">{catInfo.icon}</span>
-            <div className="h-5 w-px bg-white/20" />
-            <span className="font-bold text-sm text-white/90 tracking-wide">{story.source}</span>
-          </div>
-          <ShareButton headline={story.headline} summary={story.summary} />
+      {/* Top Header metadata */}
+      <div className="relative z-10 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <span className="text-2xl drop-shadow-lg">{catInfo.icon}</span>
+          <div className="h-4 w-px bg-white/20" />
+          <span className="font-bold text-base text-white/95 tracking-wide uppercase">{story.source}</span>
         </div>
+        <ShareButton headline={story.headline} summary={story.summary} />
+      </div>
 
-        {/* Headline */}
-        <h2 className="text-xl font-extrabold text-white leading-tight mb-3 drop-shadow-lg group-hover:text-white/95 transition-colors">{story.headline}</h2>
-
-        {/* Summary */}
-        <p className="text-sm text-white/70 leading-relaxed mb-4 line-clamp-3">{story.summary}</p>
+      {/* Main Content Area (Headline + Summary) */}
+      <div className="relative z-10 flex-1 flex flex-col justify-center my-4 space-y-4 max-w-xl mx-auto w-full">
+        {/* Dynamic decorative category label */}
+        <span className={`self-start text-[10px] uppercase font-bold tracking-widest px-2.5 py-1 rounded border border-white/10 bg-white/5 text-white/60`}>
+          {catInfo.label}
+        </span>
+        
+        <h2 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-white leading-tight drop-shadow-lg select-text">
+          {story.headline}
+        </h2>
+        
+        <p className="text-sm sm:text-base text-white/80 leading-relaxed drop-shadow-md select-text line-clamp-6">
+          {story.summary}
+        </p>
 
         {/* Tags */}
-        <div className="flex flex-wrap gap-2 mb-5">
+        <div className="flex flex-wrap gap-2 pt-2">
           {story.tags.map(tag => (
-            <span key={tag} className={`text-[11px] px-3 py-1 rounded-full border font-medium backdrop-blur-sm ${accent}`}>
-              {tag}
+            <span key={tag} className={`text-[11px] px-3 py-1 rounded-full border font-semibold backdrop-blur-sm ${accent}`}>
+              #{tag.replace(/\s+/g, '')}
             </span>
           ))}
         </div>
+      </div>
 
-        {/* Bottom row */}
-        <div className="flex items-center justify-between">
-          <a href={story.link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-sm font-bold text-white/90 hover:text-white transition-colors group/link bg-white/10 backdrop-blur-sm border border-white/20 px-4 py-2 rounded-full">
-            <span>Read full story</span>
-            <svg className="w-4 h-4 transform group-hover/link:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
-          </a>
-          <span className="text-xs text-white/40 font-medium">{story.time}</span>
-        </div>
+      {/* Bottom CTA / Action */}
+      <div className="relative z-10 flex items-center justify-between pt-4 border-t border-white/10">
+        <a 
+          href={story.link} 
+          target="_blank" 
+          rel="noopener noreferrer" 
+          className="inline-flex items-center gap-2 text-sm font-bold text-white bg-white/10 hover:bg-white/20 active:scale-95 transition-all backdrop-blur-md border border-white/20 px-6 py-3 rounded-full"
+        >
+          <span>Read Full Story</span>
+          <svg className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+          </svg>
+        </a>
+        <span className="text-xs text-white/40 font-semibold">{story.time}</span>
       </div>
     </article>
   )
@@ -424,13 +438,13 @@ function NewsCard({ story }) {
 // ─── Skeleton Card (Dark) ──────────────────────────────────────────
 function SkeletonCard() {
   return (
-    <div className="relative bg-gradient-to-br from-slate-900 to-gray-950 rounded-2xl overflow-hidden shadow-lg animate-pulse border border-white/10">
+    <div className="relative bg-gradient-to-br from-slate-900 to-gray-950 h-full w-full flex flex-col justify-between p-6 rounded-2xl overflow-hidden shadow-lg animate-pulse border border-white/10">
       <div className="absolute inset-0 opacity-20"><div className="absolute top-[-40%] right-[-20%] w-[60%] h-[60%] bg-white rounded-full blur-[120px]" /></div>
-      <div className="relative z-10 p-6">
+      <div className="relative z-10 flex-1 flex flex-col justify-center my-4 space-y-4 max-w-xl mx-auto w-full">
         <div className="flex items-center gap-3 mb-4"><div className="w-7 h-7 bg-white/10 rounded-lg" /><div className="h-5 w-px bg-white/20" /><div className="h-4 w-20 bg-white/10 rounded" /></div>
-        <div className="h-6 w-full bg-white/10 rounded mb-3" />
-        <div className="h-6 w-3/4 bg-white/10 rounded mb-4" />
-        <div className="space-y-2 mb-5"><div className="h-3 w-full bg-white/5 rounded" /><div className="h-3 w-5/6 bg-white/5 rounded" /></div>
+        <div className="h-8 w-full bg-white/10 rounded mb-3" />
+        <div className="h-8 w-3/4 bg-white/10 rounded mb-4" />
+        <div className="space-y-2 mb-5"><div className="h-4 w-full bg-white/5 rounded" /><div className="h-4 w-5/6 bg-white/5 rounded" /></div>
         <div className="flex gap-2"><div className="h-6 w-16 bg-white/10 rounded-full" /><div className="h-6 w-20 bg-white/10 rounded-full" /></div>
       </div>
     </div>
@@ -606,9 +620,9 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-950 via-slate-950 to-black">
+    <div className="h-screen w-screen overflow-hidden flex flex-col bg-gradient-to-b from-gray-950 via-slate-950 to-black select-none">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-gray-950/80 backdrop-blur-xl border-b border-white/10 shadow-lg shadow-black/20">
+      <header className="shrink-0 bg-gray-950/80 backdrop-blur-xl border-b border-white/10 shadow-lg shadow-black/20">
         <div className="max-w-2xl mx-auto px-4 py-3">
           <div className="flex items-center justify-between mb-3">
             {/* Logo */}
@@ -644,30 +658,50 @@ function App() {
       </header>
 
       {/* Content */}
-      {activeTab === 'explore' ? (
-        <ExplorePage onSelectCategory={handleExploreSelect} selectedCategory={selectedCategory} />
-      ) : (
-        <main className="max-w-2xl mx-auto px-4 py-6 space-y-5">
-          {/* Active filter badge */}
-          {selectedCategory !== 'all' && (
-            <div className="flex items-center gap-2 mb-1">
-              <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border ${CATEGORIES.find(c => c.id === selectedCategory)?.bg}`}>
-                {CATEGORIES.find(c => c.id === selectedCategory)?.icon} {CATEGORIES.find(c => c.id === selectedCategory)?.label}
-              </span>
-              <button onClick={() => handleExploreSelect('all')} className="text-xs text-gray-500 hover:text-red-400 transition-colors">Clear filter</button>
-            </div>
-          )}
+      <div className="flex-1 overflow-hidden">
+        {activeTab === 'explore' ? (
+          <div className="h-full w-full overflow-y-auto no-scrollbar">
+            <ExplorePage onSelectCategory={handleExploreSelect} selectedCategory={selectedCategory} />
+          </div>
+        ) : (
+          <div className="h-full w-full max-w-2xl mx-auto px-4 py-4 flex flex-col overflow-hidden">
+            {/* Active filter badge */}
+            {selectedCategory !== 'all' && (
+              <div className="flex items-center gap-2 mb-3 shrink-0">
+                <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border ${CATEGORIES.find(c => c.id === selectedCategory)?.bg}`}>
+                  {CATEGORIES.find(c => c.id === selectedCategory)?.icon} {CATEGORIES.find(c => c.id === selectedCategory)?.label}
+                </span>
+                <button onClick={() => handleExploreSelect('all')} className="text-xs text-gray-500 hover:text-red-400 transition-colors">Clear filter</button>
+              </div>
+            )}
 
-          {stories.map(story => <NewsCard key={story.id} story={story} />)}
-          {loading && <><SkeletonCard /><SkeletonCard /></>}
-          <div ref={observerTarget} className="h-10" />
-          {!loading && stories.length > 0 && <p className="text-center text-xs text-gray-600 py-8">Scroll for more • Auto-updates</p>}
-        </main>
-      )}
+            {/* Reels snapping container */}
+            <div className="flex-1 w-full overflow-y-scroll snap-y snap-mandatory no-scrollbar flex flex-col gap-4 pb-4">
+              {stories.map(story => (
+                <div key={story.id} className="h-full min-h-[calc(100vh-175px)] max-h-[750px] w-full shrink-0 snap-start">
+                  <NewsCard story={story} />
+                </div>
+              ))}
+              {loading && (
+                <>
+                  <div className="h-full min-h-[calc(100vh-175px)] max-h-[750px] w-full shrink-0 snap-start">
+                    <SkeletonCard />
+                  </div>
+                  <div className="h-full min-h-[calc(100vh-175px)] max-h-[750px] w-full shrink-0 snap-start">
+                    <SkeletonCard />
+                  </div>
+                </>
+              )}
+              {/* Observer target */}
+              <div ref={observerTarget} className="h-4 shrink-0" />
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Footer */}
-      <footer className="max-w-2xl mx-auto px-4 py-6 text-center border-t border-white/5 mt-8">
-        <p className="text-xs text-gray-600">NewsPulse • Curated from trusted sources worldwide</p>
+      <footer className="shrink-0 py-2.5 text-center border-t border-white/5 bg-black/40">
+        <p className="text-[10px] text-gray-500 font-medium">NewsPulse • Swipe up for next story • Auto-updates</p>
       </footer>
     </div>
   )
