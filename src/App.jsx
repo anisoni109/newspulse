@@ -140,28 +140,56 @@ const NEWS_BY_COUNTRY = {
 }
 
 const SOURCE_SEARCH_URLS = {
-  'Reuters': (q) => `https://www.reuters.com/site-search/?query=${encodeURIComponent(q)}`,
-  'AP News': (q) => `https://apnews.com/search?q=${encodeURIComponent(q)}`,
-  'BBC News': (q) => `https://www.bbc.com/search?q=${encodeURIComponent(q)}`,
+  'Associated Press': (q) => `https://apnews.com/search?q=${encodeURIComponent(q)}`,
+  'Reuters US': (q) => `https://www.reuters.com/site-search/?query=${encodeURIComponent(q)}`,
+  'The New York Times': (q) => `https://www.nytimes.com/search?query=${encodeURIComponent(q)}`,
+  'The Washington Post': (q) => `https://www.washingtonpost.com/sitemaps/query?query=${encodeURIComponent(q)}`,
+  'USA Today': (q) => `https://www.usatoday.com/search/results/?q=${encodeURIComponent(q)}`,
+  'Wall Street Journal': (q) => `https://www.wsj.com/articles/${encodeURIComponent(q).toLowerCase().replace(/\s+/g, '-')}`,
   'CNN': (q) => `https://www.cnn.com/search?q=${encodeURIComponent(q)}`,
-  'The Guardian': (q) => `https://www.theguardian.com/search?q=${encodeURIComponent(q)}`,
+  'Fox News': (q) => `https://www.foxnews.com/search-results/search/#q=${encodeURIComponent(q)}`,
+  'NBC News': (q) => `https://www.nbcnews.com/search?query=${encodeURIComponent(q)}`,
+  'ABC News': (q) => `https://abcnews.go.com/search?q=${encodeURIComponent(q)}`,
+  'CBS News': (q) => `https://www.cbsnews.com/search/?q=${encodeURIComponent(q)}`,
+  'NPR': (q) => `https://www.npr.org/search/?query=${encodeURIComponent(q)}`,
   'Bloomberg': (q) => `https://www.bloomberg.com/search?query=${encodeURIComponent(q)}`,
   'CNBC': (q) => `https://www.cnbc.com/search/?query=${encodeURIComponent(q)}`,
+  'The Hill': (q) => `https://thehill.com/search/?q=${encodeURIComponent(q)}`,
+  'Politico': (q) => `https://www.politico.com/search?q=${encodeURIComponent(q)}`,
   'Forbes': (q) => `https://www.forbes.com/search/?q=${encodeURIComponent(q)}`,
-  'TechCrunch': (q) => `https://techcrunch.com/search/${encodeURIComponent(q)}`
+  'Business Insider': (q) => `https://www.businessinsider.com/search?q=${encodeURIComponent(q)}`,
+  'The Verge': (q) => `https://www.theverge.com/search?q=${encodeURIComponent(q)}`,
+  'Wired': (q) => `https://www.wired.com/search/?query=${encodeURIComponent(q)}`,
+  'Time Magazine': (q) => `https://time.com/search/?q=${encodeURIComponent(q)}`,
+  'Newsweek': (q) => `https://www.newsweek.com/search?q=${encodeURIComponent(q)}`,
+  'BBC News': (q) => `https://www.bbc.com/news/search?q=${encodeURIComponent(q)}`,
+  'The Guardian UK': (q) => `https://www.theguardian.com/uk-news?q=${encodeURIComponent(q)}`,
+  'Sky News': (q) => `https://news.sky.com/search/?query=${encodeURIComponent(q)}`,
+  'Euronews': (q) => `https://www.euronews.com/search?q=${encodeURIComponent(q)}`,
+  'The Times of India': (q) => `https://timesofindia.indiatimes.com/articleshow/${encodeURIComponent(q).toLowerCase().replace(/\s+/g, '-').substring(0, 50)}.cms`,
+  'The Hindu': (q) => `https://www.thehindu.com/search?q=${encodeURIComponent(q)}`,
+  'NDTV': (q) => `https://ndtv.com/search?keyword=${encodeURIComponent(q)}`,
+  'South China Morning Post': (q) => `https://www.scmp.com/search?q=${encodeURIComponent(q)}`,
+  'Al Jazeera': (q) => `https://www.aljazeera.com/search/?query=${encodeURIComponent(q)}`,
+  'NHK World': (q) => `https://www3.nhk.or.jp/nhkworld/en/search/?q=${encodeURIComponent(q)}`,
+  'Japan Times': (q) => `https://www.japantimes.co.jp/search/?q=${encodeURIComponent(q)}`,
+  'ABC News (Australia)': (q) => `https://www.abc.net.au/news/search?q=${encodeURIComponent(q)}`,
 }
 
 function getSourceSearchUrl(source, headline) {
   const searchFn = SOURCE_SEARCH_URLS[source]
-  return searchFn ? searchFn(headline) : `https://www.google.com/search?q=${encodeURIComponent(source + ' ' + headline)}`
+  if (searchFn) return searchFn(headline)
+  // Fallback: try to extract base domain and construct a reasonable URL
+  return `https://www.google.com/search?q=${encodeURIComponent(headline + ' site:' + source.toLowerCase().replace(/\s+/g, ''))}`
 }
 
 function generateStory(id, category = null) {
   const catId = category || Object.keys(storyData)[Math.floor(Math.random() * Object.keys(storyData).length)]
   const data = storyData[catId]
-  const headline = data.headlines[Math.floor(Math.random() * data.headlines.length)]
-  const summary = data.summaries[Math.floor(Math.random() * data.summaries.length)]
-  
+  // Pick a random index and use the SAME index for headline + summary (paired)
+  const idx = Math.floor(Math.random() * data.length)
+  const entry = data[idx]
+
   // Pick a random global source with real URL
   const sourceObj = GLOBAL_SOURCES[Math.floor(Math.random() * GLOBAL_SOURCES.length)]
 
@@ -173,10 +201,10 @@ function generateStory(id, category = null) {
 
   return {
     id: `story-${Date.now()}-${id}`,
-    headline,
-    summary,
+    headline: entry.headline,
+    summary: entry.summary,
     source: sourceObj.name,
-    link: `${sourceObj.url}/search?q=${encodeURIComponent(headline)}`,
+    link: getSourceSearchUrl(sourceObj.name, entry.headline),
     category: catId,
     tags,
     time: `${Math.floor(Math.random() * 59) + 1}m ago`,
@@ -185,9 +213,11 @@ function generateStory(id, category = null) {
 
 function generateCountryStory(id, countryId) {
   const data = NEWS_BY_COUNTRY[countryId] || storyData.world
-  const headline = data.headlines[Math.floor(Math.random() * data.headlines.length)]
-  const summary = data.summaries[Math.floor(Math.random() * data.summaries.length)]
-  
+  // Pick a random index and use the SAME index for headline + summary (paired)
+  const idx = Math.floor(Math.random() * data.headlines.length)
+  const headline = data.headlines[idx]
+  const summary = data.summaries[idx]
+
   // Pick a random source specific to this country/region
   const countrySources = SOURCES_BY_COUNTRY[countryId] || GLOBAL_SOURCES
   const sourceObj = countrySources[Math.floor(Math.random() * countrySources.length)]
@@ -197,7 +227,7 @@ function generateCountryStory(id, countryId) {
     headline,
     summary,
     source: sourceObj.name,
-    link: `${sourceObj.url}/search?q=${encodeURIComponent(headline)}`,
+    link: getSourceSearchUrl(sourceObj.name, headline),
     category: 'world',
     tags: [countryId.toUpperCase()],
     time: `${Math.floor(Math.random() * 59) + 1}m ago`,
@@ -404,128 +434,70 @@ function getSourceUrl(source) {
 
 // ─── Story Generation with Category Tags ────────────────────────────
 const storyData = {
-  world: {
-    headlines: [
-      'UN Security Council convenes emergency session as regional tensions escalate across multiple fronts',
-      'Historic peace accord signed between long-standing rivals, ending decades of territorial dispute',
-      'Massive humanitarian corridor established as millions face displacement from ongoing crisis',
-      'G20 nations pledge unprecedented cooperation on global security challenges and trade stability',
-      'International coalition launches joint military exercise in response to growing regional threat',
-      'Refugee crisis deepens as border closures force hundreds of thousands into dangerous crossings',
-      'Diplomatic breakthrough: Former adversaries agree to restore full bilateral relations',
-      'Global summit produces landmark agreement on cross-border water sharing and resource management',
-    ],
-    summaries: [
-      'World leaders gathered in Geneva for emergency talks, producing a framework for de-escalation that includes mutual troop withdrawals and the establishment of demilitarized zones. The agreement, brokered by neutral parties, marks the first diplomatic breakthrough in years.',
-      'The accord, reached after 18 months of secret negotiations, includes provisions for border security cooperation, joint economic development zones, and a framework for resolving future disputes through arbitration rather than force.',
-      'International aid organizations have mobilized rapidly to establish supply routes and temporary shelters. The UN has called for $2 billion in emergency funding while coordinating with local governments on long-term resettlement plans.',
-    ],
-  },
-  politics: {
-    headlines: [
-      'Landmark legislation passes Senate in historic bipartisan vote, reshaping domestic policy landscape',
-      'Supreme Court to hear arguments on executive authority that could redefine separation of powers',
-      'Major party announces sweeping reform platform ahead of midterm elections, focusing on governance',
-      'New polling reveals shifting voter priorities as economy and healthcare top concerns nationwide',
-      'Congressional committee releases damning report on government oversight failures across multiple agencies',
-      'Governor signs executive order expanding voting access in response to federal court ruling',
-    ],
-    summaries: [
-      'The legislation, which passed with support from both parties, allocates significant funding for infrastructure modernization and includes provisions for regulatory reform. Supporters say it represents a rare moment of genuine bipartisan cooperation.',
-      'Legal experts describe the case as one of the most consequential in decades, potentially affecting presidential powers across multiple domains including emergency response, foreign policy, and domestic regulation.',
-      'The platform outlines ambitious proposals for campaign finance reform, government transparency measures, and electoral modernization. Analysts say it could set the agenda for the next congressional session.',
-    ],
-  },
-  business: {
-    headlines: [
-      'Global markets surge as central banks signal coordinated approach to economic stabilization',
-      'Tech giant announces $10 billion investment in manufacturing, creating thousands of domestic jobs',
-      'Cryptocurrency regulation framework takes shape as regulators propose comprehensive oversight rules',
-      'Housing market shows signs of cooling as interest rate hikes begin to impact buyer demand',
-      'Major merger deal valued at $50 billion reshapes competitive landscape across entire industry sector',
-      'Small business confidence reaches new high as consumer spending patterns show robust recovery',
-    ],
-    summaries: [
-      'The coordinated policy response from major central banks has calmed investor concerns, with the S&P 500 reaching record highs. Analysts note that the synchronized approach signals growing recognition of interconnected global economic challenges.',
-      'The investment will fund construction of new semiconductor fabrication plants and includes commitments to domestic supply chain development. The project is expected to create an estimated 8,000 direct jobs over the next three years.',
-      'The proposed rules would establish licensing requirements for digital asset platforms, mandate consumer protection standards, and create reporting frameworks similar to traditional financial institutions.',
-    ],
-  },
-  tech: {
-    headlines: [
-      'Revolutionary AI system demonstrates unprecedented reasoning capabilities in independent benchmark tests',
-      'Major cybersecurity breach exposes millions of records, prompting industry-wide security overhaul',
-      'Quantum computing milestone achieved as researchers demonstrate error-corrected operations at scale',
-      'New open-source framework threatens to disrupt dominant cloud computing ecosystem entirely',
-      'Breakthrough in battery technology promises to double electric vehicle range while cutting charging time',
-      'Social media platform launches radical new approach to content moderation using decentralized governance',
-    ],
-    summaries: [
-      'The system, developed by an independent research lab, outperformed all existing models across multiple reasoning benchmarks including mathematical problem-solving and logical deduction. Industry experts say it represents a significant leap forward in artificial intelligence capabilities.',
-      'Security researchers discovered the breach affecting one of the largest data aggregators, with personal information from over 200 million users potentially exposed. The incident has triggered calls for stricter data protection regulations across the industry.',
-      'The achievement, published in a peer-reviewed journal, demonstrates that practical quantum advantage may be closer than previously estimated. Several major tech companies have already announced plans to build on this research foundation.',
-    ],
-  },
-  sports: {
-    headlines: [
-      'Underdog team stuns favorites in dramatic championship upset, securing first title in franchise history',
-      'Star athlete announces surprise retirement after record-breaking career spanning two decades',
-      'Host city revealed for 2036 Olympic Games, marking first time event held in region',
-      'Major league announces sweeping format changes aimed at improving competition and viewer engagement',
-      'Rising star breaks century-old world record, setting new standard in athletic performance',
-      'International federation votes to add exciting new sport to upcoming Olympic program',
-    ],
-    summaries: [
-      'In what many are calling the greatest upset in sporting history, the underdog team overcame a 20-point deficit in the final quarter to claim victory. The emotional celebration marked the culmination of years of rebuilding and perseverance.',
-      'The athlete, widely regarded as one of the greatest in the sport\'s history, announced the decision via an emotional video message thanking fans and teammates. Career statistics include multiple championship titles and numerous records.',
-      'The selection represents a historic moment for the region, with organizers promising sustainable venues and a legacy that will benefit communities long after the games conclude. Construction is expected to begin within two years.',
-    ],
-  },
-  science: {
-    headlines: [
-      'Deep space telescope captures unprecedented images of earliest galaxies formed after Big Bang',
-      'Gene therapy breakthrough offers hope for millions suffering from previously incurable genetic disorders',
-      'Ocean researchers discover vast new ecosystem in deep sea, rewriting understanding of marine biodiversity',
-      'Fusion energy experiment produces net positive output for record-breaking sustained period',
-      'Archaeological dig uncovers ancient city that could rewrite human history timeline entirely',
-      'New study reveals alarming acceleration in polar ice sheet melting, exceeding all previous models',
-    ],
-    summaries: [
-      'The images reveal galaxies formed just 200 million years after the Big Bang, far earlier than previously thought possible. The findings challenge existing theories about galaxy formation and suggest the early universe was more dynamic than scientists believed.',
-      'The therapy, which uses modified viral vectors to deliver corrected genes directly to affected cells, has shown remarkable results in clinical trials with near-complete symptom reversal in participating patients.',
-      'The ecosystem, located at depths exceeding 4,000 meters, contains hundreds of previously unknown species adapted to extreme pressure and darkness. The discovery highlights how little we know about Earth\'s own oceans.',
-    ],
-  },
-  health: {
-    headlines: [
-      'WHO declares end of global health emergency as pandemic measures are systematically rolled back',
-      'Revolutionary cancer treatment shows 95% remission rate in groundbreaking clinical trial results',
-      'Mental health crisis deepens among young adults as demand for services outpaces available resources',
-      'New vaccine technology platform could enable rapid response to future pandemic threats within weeks',
-      'Study links common environmental pollutant to increased risk of neurodegenerative diseases',
-      'Telemedicine adoption reaches new heights as patients and providers embrace digital healthcare delivery',
-    ],
-    summaries: [
-      'The declaration follows a steady decline in cases worldwide and the successful rollout of vaccination programs across all regions. Health officials emphasize continued vigilance while transitioning to routine disease management.',
-      'The treatment, which harnesses the body\'s own immune system to target cancer cells with unprecedented precision, has shown remarkable results across multiple cancer types including some considered untreatable just years ago.',
-      'Healthcare systems worldwide are struggling to meet surging demand for mental health services. Experts call for increased funding, workforce expansion, and integration of mental health care into primary healthcare settings.',
-    ],
-  },
-  entertainment: {
-    headlines: [
-      'Blockbuster film shatters opening weekend records with $500 million global box office haul',
-      'Streaming wars intensify as major platform announces ambitious slate of original content investments',
-      'Legendary musician announces surprise world tour dates spanning 40 cities across six continents',
-      'Video game adaptation earns critical acclaim, setting new standard for entertainment adaptations',
-      'Award season predictions take unexpected turn as indie films dominate early nominations and buzz',
-      'Music industry sees record-breaking year as streaming revenues surpass $50 billion globally',
-    ],
-    summaries: [
-      'The film has exceeded all industry projections, driven by word-of-mouth acclaim and strong audience scores. Critics have praised its innovative storytelling approach and groundbreaking visual effects that push the boundaries of modern filmmaking.',
-      'The platform unveiled a lineup featuring over 200 new original productions across all genres, representing the largest content investment in entertainment history. Industry analysts say this signals an intensifying battle for subscriber growth.',
-      'Tickets sold out within minutes of going on sale, with fans camping outside venues worldwide. The tour will feature a completely reimagined stage production incorporating cutting-edge technology and visual effects never before seen live.',
-    ],
-  },
+  world: [
+    { headline: 'Global Leaders Convene Emergency Summit to Address Escalating Regional Conflicts Across Three Continents', summary: 'Representatives from over 40 nations gathered for emergency diplomatic talks aimed at de-escalating tensions in conflict zones. The summit produced initial frameworks for ceasefires and humanitarian aid corridors, though key parties remain divided on enforcement mechanisms.' },
+    { headline: 'Historic International Climate Agreement Enters Force with Binding Emissions Targets for 190 Nations', summary: 'The landmark accord establishes legally binding carbon reduction milestones through 2035, backed by a $500 billion green transition fund. Developing nations will receive technology transfer and financial support to accelerate their shift away from fossil fuels.' },
+    { headline: 'United Nations Launches Largest Peacekeeping Operation in Decades as Multiple Crises Demand Coordinated Response', summary: 'The Security Council authorized a multinational force of 30,000 personnel to stabilize regions facing simultaneous humanitarian and political emergencies. The operation will focus on protecting civilian populations and facilitating refugee repatriation.' },
+    { headline: 'Global Supply Chain Restructuring Accelerates as Nations Prioritize Resilience Over Cost Efficiency', summary: 'Major economies are reshoring critical manufacturing capabilities following years of disruption, with trillions in investment flowing into domestic production capacity. Experts predict a fundamental shift in international trade patterns over the coming decade.' },
+    { headline: 'International Court Issues Landmark Ruling on Maritime Boundaries, Resolving Decades-Long Dispute Between Nations', summary: 'The decision establishes new precedents for territorial waters and exclusive economic zones, affecting fishing rights and offshore resource exploration across a vast ocean region. Several neighboring countries have expressed intent to appeal aspects of the judgment.' },
+    { headline: 'World Bank Announces Sweeping Reform Package to Better Serve Developing Economies Facing Debt Crises', summary: 'The restructuring includes expanded lending facilities, extended repayment periods, and debt sustainability frameworks designed to prevent default cascades. Critics argue the reforms do not go far enough in addressing systemic inequities in global finance.' },
+  ],
+  politics: [
+    { headline: 'Bipartisan Coalition Forges Unlikely Alliance to Pass Comprehensive Government Transparency and Reform Package', summary: 'The legislation introduces mandatory ethics training, stricter lobbying disclosure requirements, and independent oversight of political financing. Both progressive and conservative lawmakers found common ground on anti-corruption measures after months of closed-door negotiations.' },
+    { headline: 'Electoral System Overhaul Gains Momentum as Cross-Party Commission Recommends Ranked-Choice Voting Nationwide', summary: 'The proposed reforms would transform how citizens select representatives, potentially reducing partisan polarization by encouraging candidates to appeal beyond their base. Several states have already begun pilot programs ahead of potential federal adoption.' },
+    { headline: 'Supreme Court Decision on Digital Privacy Sets New Precedent for Government Surveillance Powers in the Internet Age', summary: 'The ruling requires law enforcement agencies to obtain judicial warrants before accessing citizens\' digital communications, marking a significant expansion of privacy protections. Technology companies must now comply with updated data preservation standards.' },
+    { headline: 'Federal Budget Negotiations Reach Critical Juncture as Deadline Approaches for Funding Multiple Government Agencies', summary: 'Lawmakers face difficult choices between defense spending increases and domestic program funding amid growing national debt. The standoff highlights deep ideological divides that could impact government operations if a compromise is not reached.' },
+    { headline: 'New Executive Order Establishes National Framework for Artificial Intelligence Governance and Safety Standards', summary: 'The directive mandates rigorous testing protocols for advanced AI systems before deployment, creates an oversight body within the Department of Commerce, and requires companies to report safety incidents. Industry leaders have mixed reactions to the regulatory approach.' },
+    { headline: 'Grassroots Movement Successfully Pushes Local Governments to Adopt Citizen Assembly Model for Policy Deliberation', summary: 'Randomly selected citizen panels are being used in over 50 municipalities to provide nonpartisan recommendations on contentious issues. Early results show higher public trust in outcomes compared to traditional legislative processes.' },
+  ],
+  business: [
+    { headline: 'Central Banks Coordinate Unprecedented Monetary Policy Shift as Global Economic Indicators Signal Turning Point', summary: 'Synchronized adjustments to interest rate policies reflect growing confidence that inflation is being brought under control without triggering recession. Markets rallied on the news, with major indices posting their strongest gains in over a year.' },
+    { headline: 'Major Technology Corporation Commits $15 Billion to Build Domestic Semiconductor Manufacturing Hub, Promising 10,000 Jobs', summary: 'The facility will produce advanced chips using next-generation fabrication processes, reducing dependence on overseas supply chains. The investment qualifies for substantial government incentives under the national semiconductor competitiveness initiative.' },
+    { headline: 'Global Renewable Energy Investment Surpasses Fossil Fuel Spending for First Time, Marking Historic Economic Tipping Point', summary: 'Capital flows into solar, wind, and battery storage technologies now outpace traditional energy investments by a significant margin. The shift is driven by falling technology costs, supportive policy frameworks, and growing institutional investor demand for sustainable assets.' },
+    { headline: 'International Trade Negotiations Produce New Framework Aimed at Reducing Tariffs on Critical Green Technology Components', summary: 'The agreement covers solar panels, wind turbine parts, electric vehicle batteries, and related materials across 30 participating nations. Implementation is expected to accelerate the global transition to clean energy by lowering costs for developing economies.' },
+    { headline: 'Small Business Innovation Index Reaches Record High as Entrepreneurship Surges in AI and Clean Technology Sectors', summary: 'New ventures launched in emerging technology fields are creating disproportionate economic value, with venture capital funding concentrated in a growing number of specialized sectors. Small business administration programs report record application volumes.' },
+    { headline: 'Global Housing Market Shows Signs of Stabilization as Mortgage Rates Peak and First-Time Buyer Programs Gain Traction', summary: 'Affordability initiatives targeting young professionals and essential workers are beginning to increase transaction volumes in previously frozen markets. Economists caution that structural supply shortages will keep prices elevated in many regions for the foreseeable future.' },
+  ],
+  tech: [
+    { headline: 'Next-Generation Artificial Intelligence Model Demonstrates Breakthrough Reasoning Abilities Across Scientific Research Domains', summary: 'The system has shown remarkable capacity for hypothesis generation and experimental design, already assisting researchers in drug discovery and materials science. Developers emphasize the tool is designed to augment rather than replace human scientific judgment.' },
+    { headline: 'Major Cybersecurity Framework Overhaul Proposed After Series of Sophisticated Attacks Target Critical Infrastructure Systems', summary: 'The proposed standards would require real-time threat monitoring, mandatory vulnerability disclosure within 24 hours, and independent security audits for all critical sector operators. Compliance deadlines are set to begin within six months of adoption.' },
+    { headline: 'Quantum Computing Startup Achieves Practical Error Correction Milestone, Bringing Commercial Applications Closer to Reality', summary: 'The breakthrough in maintaining stable quantum states for extended periods addresses one of the field\'s most persistent challenges. Several financial and pharmaceutical companies have already signed letters of intent to access early quantum computing resources.' },
+    { headline: 'Open-Source Movement Gains Major Corporate Backing as Tech Giants Collaborate on Shared Infrastructure Standards', summary: 'A consortium of leading technology companies has committed significant resources to developing interoperable, transparent platforms for cloud computing and data management. The initiative aims to reduce vendor lock-in and promote innovation through collaborative development.' },
+    { headline: 'Solid-State Battery Technology Achieves Commercial Viability, Promising Electric Vehicles with 600-Mile Range and 15-Minute Charging', summary: 'The new battery architecture eliminates flammable liquid electrolytes while dramatically increasing energy density. Multiple automakers have announced plans to incorporate the technology into next-generation vehicle platforms starting within three years.' },
+    { headline: 'Decentralized Social Media Protocol Gains Millions of Users Seeking Alternatives to Centralized Platform Governance', summary: 'The open protocol allows users to control their data while maintaining compatibility with existing social media applications. Developers are building tools that enable community-driven content moderation without sacrificing free expression principles.' },
+  ],
+  sports: [
+    { headline: 'Unprecedented Underdog Victory Captivates Global Audience as Last-Place Team Clinches Championship in Dramatic Fashion', summary: 'The team\'s remarkable turnaround from worst-to-first was built on innovative tactical approaches and exceptional performances from previously overlooked players. Sports analysts are calling it the most improbable championship run in the history of the sport.' },
+    { headline: 'International Olympic Committee Announces Bold New Format for Future Games Emphasizing Sustainability and Urban Integration', summary: 'Upcoming editions will utilize 95% existing or temporary venues, with host cities required to demonstrate long-term community benefit plans. The reforms aim to reduce costs and address growing concerns about the financial burden of hosting the Olympics.' },
+    { headline: 'Revolutionary Player Tracking Technology Transforms Coaching Strategies and Enhances Athlete Performance Analysis', summary: 'Advanced sensor systems combined with machine learning analytics provide real-time insights into player biomechanics, fatigue levels, and tactical positioning. League officials have approved the technology after successful trials demonstrated measurable improvements in player safety.' },
+    { headline: 'Women\'s Sports Viewership Reaches All-Time High as Investment in Professional Leagues Drives Quality and Accessibility', summary: 'Broadcast ratings for women\'s professional competitions have tripled over the past three years, attracting major sponsorship deals and increasing athlete compensation. The growth is attributed to improved production values, star player development, and expanded media coverage.' },
+    { headline: 'Historic International Rivalry Renewed as Two Nations Face Off in World Cup Qualifier That Draws Record Global Audience', summary: 'The match showcased the highest level of competitive football, with tactical innovations from both coaches creating a compelling contest. Fans worldwide tuned in to witness what many are calling the most significant sporting event of the year.' },
+    { headline: 'E-Sports Prize Pools Now Rival Traditional Sports as Competitive Gaming Attracts Major Corporate Sponsorship and Television Deals', summary: 'The top gaming tournaments now offer prize money comparable to major golf championships and tennis grand slams. Broadcast networks are investing heavily in e-sports coverage, recognizing the demographic appeal and growing global fanbase.' },
+  ],
+  science: [
+    { headline: 'Deep Space Observatory Captures Most Detailed Images Ever of Galaxy Formation During Universe\'s First Billion Years', summary: 'The observations reveal unexpectedly massive early galaxies that challenge existing models of cosmic evolution. Scientists are revising theories about how quickly matter condensed into the structures we see in the modern universe.' },
+    { headline: 'Gene Editing Therapy Shows Promise in Clinical Trials for Previously Untreatable Neurological Conditions Affecting Millions', summary: 'Patients receiving the experimental treatment demonstrated significant improvement in motor function and cognitive performance over a 12-month period. The approach uses precisely targeted genetic modifications to address root causes rather than managing symptoms.' },
+    { headline: 'Ocean Exploration Mission Discovers Vast Network of Hydrothermal Vent Ecosystems Supporting Unique Life Forms Unknown to Science', summary: 'The newly mapped vent systems span hundreds of kilometers along mid-ocean ridges and host organisms adapted to extreme temperatures and chemical conditions. Researchers believe these ecosystems could provide insights into the origins of life on Earth and potential for life elsewhere.' },
+    { headline: 'Nuclear Fusion Reactor Sustains Net Energy Output for Record Duration, Advancing Path Toward Clean Unlimited Power', summary: 'The experimental reactor maintained stable plasma conditions producing more energy than consumed for a continuous period previously thought impossible. Engineering challenges remain before commercial deployment, but the achievement represents a critical step toward fusion as a viable energy source.' },
+    { headline: 'Ancient DNA Analysis Rewrites Human Migration Timeline, Revealing Previously Unknown Population Movements Across Continents', summary: 'Genetic evidence from 200 ancient specimens shows complex patterns of interbreeding and migration that contradict simpler models of human dispersal. The findings have profound implications for understanding how modern populations acquired genetic adaptations to different environments.' },
+    { headline: 'Breakthrough in Room-Temperature Superconductor Research Could Transform Power Grids, Transportation, and Computing Infrastructure', summary: 'The material exhibits zero electrical resistance under conditions achievable with existing technology, opening possibilities for lossless power transmission and ultra-efficient electronics. Independent laboratories are working to replicate the results before the scientific community can confirm the discovery.' },
+  ],
+  health: [
+    { headline: 'Global Health Agencies Report Significant Progress in Pandemic Preparedness as New Surveillance Systems Enable Early Warning Detection', summary: 'Advanced genomic sequencing networks deployed across 150 countries can now identify novel pathogens within days of emergence. The enhanced monitoring infrastructure represents a major investment in global health security following lessons learned from recent outbreaks.' },
+    { headline: 'Revolutionary Immunotherapy Approach Shows Exceptional Results in Treating Aggressive Cancers That Previously Had Limited Options', summary: 'The treatment reprograms patients\' own immune cells to recognize and destroy tumor cells with remarkable precision, achieving remission in a majority of participants across multiple cancer types. Side effects are significantly milder than conventional chemotherapy.' },
+    { headline: 'Mental Health Services Expansion Initiative Receives Record Funding as Governments Recognize Growing Crisis Among All Age Groups', summary: 'New programs will fund community mental health centers, telehealth platforms, and school-based counseling services. The investment reflects a paradigm shift in viewing mental health care as essential infrastructure rather than an optional supplement to physical medicine.' },
+    { headline: 'Personalized Medicine Breakthrough Enables Cancer Treatment Tailored to Individual Genetic Profiles, Dramatically Improving Outcomes', summary: 'Genomic profiling of tumors allows oncologists to select therapies most likely to succeed for each patient, moving away from one-size-fits-all approaches. Early data shows response rates nearly double compared to standard treatment protocols.' },
+    { headline: 'Wearable Health Monitoring Devices Gain Medical Grade Accuracy as Technology Enables Continuous Disease Prevention Tracking', summary: 'New generations of consumer wearables can detect early signs of cardiac arrhythmias, respiratory conditions, and metabolic disturbances with clinical-level precision. Regulatory bodies are developing frameworks to integrate this data into standard healthcare workflows.' },
+    { headline: 'Antibiotic Resistance Crisis Prompts Development of Novel Antimicrobial Classes Using Artificial Intelligence Drug Discovery Platforms', summary: 'AI systems have identified promising new compounds that kill drug-resistant bacteria through mechanisms unlike any existing antibiotic class. Clinical trials are planned within two years as the world races to address the growing threat of untreatable infections.' },
+  ],
+  entertainment: [
+    { headline: 'Independent Film Breakout Sensation Dominates Global Box Office, Proving Audiences Crave Original Storytelling Over Franchise Sequels', summary: 'The low-budget production has earned over $400 million worldwide through strong word-of-mouth and critical acclaim. Industry executives are reassessing their reliance on established franchises after the film demonstrated that fresh narratives can achieve massive commercial success.' },
+    { headline: 'Streaming Platforms Enter New Competitive Phase as Services Differentiate Through Exclusive Creator Partnerships and Interactive Content', summary: 'Major platforms are investing in long-term relationships with acclaimed filmmakers and experimenting with branching narrative formats that let audiences influence story outcomes. The evolution signals maturation beyond the subscriber growth-at-all-costs strategy of earlier years.' },
+    { headline: 'Music Industry Experiences Global Renaissance as Live Concert Attendance and Album Sales Reach Highest Levels in Thirty Years', summary: 'A diverse roster of artists across genres is driving unprecedented demand for both recorded music and live performances. The resurgence is attributed to a new generation of musicians blending cultural influences and leveraging direct-to-fan digital platforms.' },
+    { headline: 'Video Game Industry Surpasses Film and Music Combined as Interactive Entertainment Becomes Dominant Form of Global Media Consumption', summary: 'Revenue from gaming now exceeds the combined totals of traditional entertainment sectors, driven by mobile gaming in emerging markets and premium experiences on consoles and PC. Cultural influence extends beyond gaming into fashion, music, and social interaction.' },
+    { headline: 'Award-Winning Television Series Redefines Storytelling Boundaries with Multi-Narrative Structure Spanning Multiple Time Periods', summary: 'The ambitious production weaves together storylines across different eras to explore enduring themes of human resilience and connection. Critics have hailed it as a landmark achievement in serialized storytelling that pushes the creative limits of the medium.' },
+    { headline: 'Virtual Reality Concert Experiences Attract Millions of Viewers as Artists Embrace Immersive Digital Performance Formats', summary: 'Musicians are creating fully immersive concert environments where remote audiences can interact with performances in three-dimensional virtual spaces. The technology enables artists to reach global fans while experimenting with visual and auditory experiences impossible in physical venues.' },
+  ],
 }
 
 // ─── Share Component ────────────────────────────────────────────────
@@ -640,11 +612,11 @@ function NewsCard({ story }) {
           href={story.link} 
           target="_blank" 
           rel="noopener noreferrer" 
-          className="inline-flex items-center gap-2 text-sm font-bold text-white bg-white/10 hover:bg-white/20 active:scale-95 transition-all backdrop-blur-md border border-white/20 px-6 py-3 rounded-full"
+          className="inline-flex items-center gap-2 text-sm font-bold text-white bg-gradient-to-r from-violet-600/80 to-indigo-600/80 hover:from-violet-500/90 hover:to-indigo-500/90 active:scale-[0.97] transition-all backdrop-blur-md border border-white/20 px-5 py-2.5 rounded-full shadow-lg shadow-purple-900/30"
         >
           <span>Read Full Story</span>
-          <svg className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
           </svg>
         </a>
         <span className="text-xs text-white/40 font-semibold">{story.time}</span>
