@@ -161,7 +161,9 @@ function generateStory(id, category = null) {
   const data = storyData[catId]
   const headline = data.headlines[Math.floor(Math.random() * data.headlines.length)]
   const summary = data.summaries[Math.floor(Math.random() * data.summaries.length)]
-  const source = sources[Math.floor(Math.random() * sources.length)]
+  
+  // Pick a random global source with real URL
+  const sourceObj = GLOBAL_SOURCES[Math.floor(Math.random() * GLOBAL_SOURCES.length)]
 
   // Pick relevant tags for this category
   const availableTags = TAGS_BY_CATEGORY[catId] || []
@@ -173,8 +175,8 @@ function generateStory(id, category = null) {
     id: `story-${Date.now()}-${id}`,
     headline,
     summary,
-    source,
-    link: getSourceSearchUrl(source, headline),
+    source: sourceObj.name,
+    link: `${sourceObj.url}/search?q=${encodeURIComponent(headline)}`,
     category: catId,
     tags,
     time: `${Math.floor(Math.random() * 59) + 1}m ago`,
@@ -185,21 +187,220 @@ function generateCountryStory(id, countryId) {
   const data = NEWS_BY_COUNTRY[countryId] || storyData.world
   const headline = data.headlines[Math.floor(Math.random() * data.headlines.length)]
   const summary = data.summaries[Math.floor(Math.random() * data.summaries.length)]
-  const source = sources[Math.floor(Math.random() * sources.length)]
+  
+  // Pick a random source specific to this country/region
+  const countrySources = SOURCES_BY_COUNTRY[countryId] || GLOBAL_SOURCES
+  const sourceObj = countrySources[Math.floor(Math.random() * countrySources.length)]
 
   return {
     id: `story-${Date.now()}-${id}`,
     headline,
     summary,
-    source,
-    link: getSourceSearchUrl(source, headline),
+    source: sourceObj.name,
+    link: `${sourceObj.url}/search?q=${encodeURIComponent(headline)}`,
     category: 'world',
     tags: [countryId.toUpperCase()],
     time: `${Math.floor(Math.random() * 59) + 1}m ago`,
   }
 }
 
-const sources = ['Reuters', 'AP News', 'BBC News', 'CNN', 'The Guardian', 'Bloomberg', 'CNBC', 'Forbes', 'TechCrunch']
+// ─── 100+ Real Accredited News Sources Per Country/Region ──────────
+const SOURCES_BY_COUNTRY = {
+  us: [
+    { name: 'Associated Press', url: 'https://apnews.com' },
+    { name: 'Reuters US', url: 'https://www.reuters.com/us/' },
+    { name: 'The New York Times', url: 'https://www.nytimes.com' },
+    { name: 'The Washington Post', url: 'https://www.washingtonpost.com' },
+    { name: 'USA Today', url: 'https://www.usatoday.com' },
+    { name: 'Wall Street Journal', url: 'https://www.wsj.com' },
+    { name: 'CNN', url: 'https://www.cnn.com' },
+    { name: 'Fox News', url: 'https://www.foxnews.com' },
+    { name: 'NBC News', url: 'https://www.nbcnews.com' },
+    { name: 'ABC News', url: 'https://abcnews.go.com' },
+    { name: 'CBS News', url: 'https://www.cbsnews.com' },
+    { name: 'NPR', url: 'https://www.npr.org' },
+    { name: 'Bloomberg', url: 'https://www.bloomberg.com' },
+    { name: 'CNBC', url: 'https://www.cnbc.com' },
+    { name: 'The Hill', url: 'https://thehill.com' },
+    { name: 'Politico', url: 'https://www.politico.com' },
+    { name: 'The Atlantic', url: 'https://www.theatlantic.com' },
+    { name: 'New York Magazine', url: 'https://nymag.com' },
+    { name: 'Los Angeles Times', url: 'https://www.latimes.com' },
+    { name: 'Chicago Tribune', url: 'https://www.chicagotribune.com' },
+    { name: 'The Guardian US', url: 'https://www.theguardian.com/us-news' },
+    { name: 'Forbes', url: 'https://www.forbes.com' },
+    { name: 'Business Insider', url: 'https://www.businessinsider.com' },
+    { name: 'The Verge', url: 'https://www.theverge.com' },
+    { name: 'Wired', url: 'https://www.wired.com' },
+    { name: 'Time Magazine', url: 'https://time.com' },
+    { name: 'Newsweek', url: 'https://www.newsweek.com' },
+    { name: 'U.S. News & World Report', url: 'https://www.usnews.com' },
+    { name: 'National Geographic', url: 'https://www.nationalgeographic.com' },
+    { name: 'Scientific American', url: 'https://www.scientificamerican.com' },
+  ],
+  uk: [
+    { name: 'BBC News', url: 'https://www.bbc.com/news' },
+    { name: 'The Guardian UK', url: 'https://www.theguardian.com/uk-news' },
+    { name: 'The Times', url: 'https://www.thetimes.com' },
+    { name: 'The Daily Telegraph', url: 'https://www.telegraph.co.uk' },
+    { name: 'The Independent', url: 'https://www.independent.co.uk' },
+    { name: 'The Financial Times', url: 'https://www.ft.com' },
+    { name: 'The Evening Standard', url: 'https://www.standard.co.uk' },
+    { name: 'The Metro', url: 'https://metro.co.uk' },
+    { name: 'The Sun', url: 'https://www.thesun.co.uk' },
+    { name: 'Daily Mail', url: 'https://www.dailymail.co.uk' },
+    { name: 'The Express', url: 'https://www.express.co.uk' },
+    { name: 'Sky News', url: 'https://news.sky.com' },
+    { name: 'ITV News', url: 'https://www.itv.com/news' },
+    { name: 'Channel 4 News', url: 'https://www.channel4.com/news' },
+    { name: 'The Scotsman', url: 'https://www.scotsman.com' },
+    { name: 'The Herald (Glasgow)', url: 'https://www.heraldscotland.com' },
+    { name: 'Wales Online', url: 'https://www.walesonline.co.uk' },
+    { name: 'Belfast Telegraph', url: 'https://www.belfasttelegraph.co.uk' },
+    { name: 'The Spectator', url: 'https://www.spectator.co.uk' },
+    { name: 'New Statesman', url: 'https://www.newstatesman.com' },
+  ],
+  eu: [
+    { name: 'Euronews', url: 'https://www.euronews.com' },
+    { name: 'Politico Europe', url: 'https://www.politico.eu' },
+    { name: 'Der Spiegel (Germany)', url: 'https://www.spiegel.de' },
+    { name: 'Frankfurter Allgemeine (Germany)', url: 'https://www.faz.net' },
+    { name: 'Le Monde (France)', url: 'https://www.lemonde.fr' },
+    { name: 'Die Zeit (Germany)', url: 'https://www.zeit.de' },
+    { name: 'El País (Spain)', url: 'https://elpais.com' },
+    { name: 'Corriere della Sera (Italy)', url: 'https://www.corriere.it' },
+    { name: 'De Standaard (Belgium)', url: 'https://www.standaard.be' },
+    { name: 'NRC Handelsblad (Netherlands)', url: 'https://www.nrc.nl' },
+    { name: 'Svenska Dagbladet (Sweden)', url: 'https://www.svd.se' },
+    { name: 'Aftenposten (Norway)', url: 'https://www.aftenposten.no' },
+    { name: 'Helsingin Sanomat (Finland)', url: 'https://www.hs.fi' },
+    { name: 'Osterreichische Zeitung (Austria)', url: 'https://www.derstandard.at' },
+    { name: 'Rzeczpospolita (Poland)', url: 'https://www.rp.pl' },
+  ],
+  in: [
+    { name: 'The Times of India', url: 'https://timesofindia.indiatimes.com' },
+    { name: 'The Hindu', url: 'https://www.thehindu.com' },
+    { name: 'NDTV', url: 'https://www.ndtv.com' },
+    { name: 'The Indian Express', url: 'https://indianexpress.com' },
+    { name: 'Hindustan Times', url: 'https://www.hindustantimes.com' },
+    { name: 'India Today', url: 'https://www.indiatoday.in' },
+    { name: 'The Economic Times', url: 'https://economictimes.indiatimes.com' },
+    { name: 'Mint', url: 'https://www.livemint.com' },
+    { name: 'The Wire', url: 'https://thewire.in' },
+    { name: 'Scroll.in', url: 'https://scroll.in' },
+    { name: 'Newslaundry', url: 'https://www.newslaundry.com' },
+    { name: 'Firstpost', url: 'https://www.firstpost.com' },
+    { name: 'The Quint', url: 'https://www.thequint.com' },
+    { name: 'BBC News India', url: 'https://www.bbc.com/news/world/south_asia/india' },
+    { name: 'Reuters India', url: 'https://www.reuters.com/world/asia-pacific/india/' },
+    { name: 'The Print', url: 'https://theprint.in' },
+    { name: 'Business Standard', url: 'https://www.business-standard.com' },
+    { name: 'Financial Express', url: 'https://www.financialexpress.com' },
+  ],
+  cn: [
+    { name: 'Xinhua News', url: 'http://www.xinhuanet.com/english' },
+    { name: 'China Daily', url: 'https://www.chinadaily.com.cn' },
+    { name: 'Global Times', url: 'https://www.globaltimes.cn' },
+    { name: 'South China Morning Post', url: 'https://www.scmp.com' },
+    { name: 'Caixin Global', url: 'https://www.caixinglobal.com' },
+    { name: 'Sixth Tone', url: 'https://www.sixthtone.com' },
+    { name: 'Shanghai Daily', url: 'http://www.shanghaidaily.com' },
+    { name: 'Beijing Review', url: 'http://www.beijingreview.com.cn' },
+  ],
+  ru: [
+    { name: 'TASS', url: 'https://tass.com' },
+    { name: 'RIA Novosti', url: 'https://ria.ru' },
+    { name: 'Interfax', url: 'https://www.interfax.ru/english' },
+    { name: 'Moscow Times', url: 'https://www.themoscowtimes.com' },
+    { name: 'Kommersant', url: 'https://www.kommersant.com' },
+    { name: 'Novaya Gazeta', url: 'https://www.novayagazeta.ru/english' },
+  ],
+  me: [
+    { name: 'Al Jazeera (Qatar)', url: 'https://www.aljazeera.com' },
+    { name: 'Arab News (Saudi Arabia)', url: 'https://www.arabnews.com' },
+    { name: 'The Daily Star (Lebanon)', url: 'https://www.dailystar.com.lb' },
+    { name: 'Haaretz (Israel)', url: 'https://www.haaretz.com' },
+    { name: 'Jerusalem Post', url: 'https://www.jpost.com' },
+    { name: 'Egypt Today', url: 'https://www.egypttoday.com' },
+    { name: 'Middle East Eye', url: 'https://www.middleeasteye.net' },
+    { name: 'Gulf News (UAE)', url: 'https://gulfnews.com' },
+    { name: 'The National (UAE)', url: 'https://www.thenationalnews.com' },
+    { name: 'Kuwait Times', url: 'https://www.kuwaittimes.com' },
+  ],
+  africa: [
+    { name: 'Al Jazeera Africa', url: 'https://www.aljazeera.com/africa/' },
+    { name: 'BBC News Africa', url: 'https://www.bbc.com/news/world/africa' },
+    { name: 'Reuters Africa', url: 'https://www.reuters.com/world/africa/' },
+    { name: 'The Citizen (Tanzania)', url: 'https://www.thecitizen.co.tz' },
+    { name: 'Daily Nation (Kenya)', url: 'https://www.nation.africa' },
+    { name: 'The Star (Kenya)', url: 'https://www.the-star.co.ke' },
+    { name: 'Punch Newspapers (Nigeria)', url: 'https://punchng.com' },
+    { name: 'Vanguard (Nigeria)', url: 'https://www.vanguardngr.com' },
+    { name: 'Daily Trust (Nigeria)', url: 'https://dailytrust.com' },
+    { name: 'Mail & Guardian (South Africa)', url: 'https://mg.co.za' },
+    { name: 'IOL (South Africa)', url: 'https://www.iol.co.za' },
+    { name: 'News24 (South Africa)', url: 'https://www.news24.com' },
+    { name: 'The Monitor (Uganda)', url: 'https://www.monitor.co.ug' },
+    { name: 'GhanaWeb', url: 'https://www.ghanaweb.com' },
+    { name: 'Daily Graphic (Ghana)', url: 'https://www.graphic.com.gh' },
+    { name: 'The Namibian', url: 'https://www.namibian.com.na' },
+    { name: 'The Zimbabwean', url: 'https://www.thezimbabwean.co.zw' },
+  ],
+  sa: [
+    { name: 'O Globo (Brazil)', url: 'https://oglobo.globo.com' },
+    { name: 'Folha de S.Paulo (Brazil)', url: 'https://www.folha.uol.com.br' },
+    { name: 'Estadão (Brazil)', url: 'https://www.estadao.com.br' },
+    { name: 'El País Brasil', url: 'https://brasil.elpais.com' },
+    { name: 'Clarín (Argentina)', url: 'https://www.clarin.com' },
+    { name: 'La Nación (Argentina)', url: 'https://www.lanacion.com.ar' },
+    { name: 'El Tiempo (Colombia)', url: 'https://www.eltiempo.com' },
+    { name: 'El Espectador (Colombia)', url: 'https://www.elespectador.com' },
+    { name: 'La República (Peru)', url: 'https://larepublica.pe' },
+    { name: 'El Comercio (Peru)', url: 'https://elcomercio.pe' },
+    { name: 'Tal Cual (Venezuela)', url: 'https://www.talcualdigital.com' },
+    { name: 'Reuters Latin America', url: 'https://www.reuters.com/world/latin-america/' },
+  ],
+  jp: [
+    { name: 'NHK World', url: 'https://www3.nhk.or.jp/nhkworld/' },
+    { name: 'Japan Times', url: 'https://www.japantimes.co.jp' },
+    { name: 'Asahi Shimbun', url: 'https://www.asahi.com/ajw/' },
+    { name: 'Yomiuri Shimbun', url: 'https://www.yomiuri.co.jp' },
+    { name: 'Mainichi Shimbun', url: 'https://mainichi.jp/english' },
+    { name: 'Nikkei Asia', url: 'https://asia.nikkei.com' },
+    { name: 'The Japan News', url: 'https://the-japan-news.com' },
+  ],
+  kr: [
+    { name: 'Yonhap News (Korea)', url: 'https://en.yna.co.kr' },
+    { name: 'Korea Herald', url: 'https://www.koreaherald.com' },
+    { name: 'Korea Times', url: 'https://www.koreatimes.co.kr' },
+    { name: 'Chosun Ilbo (English)', url: 'http://english.chosun.com' },
+    { name: 'JoongAng Ilbo', url: 'http://korean.yonhapnews.co.kr' },
+    { name: 'Hankyoreh', url: 'https://www.hani.co.kr/arti/english' },
+  ],
+  au: [
+    { name: 'ABC News (Australia)', url: 'https://www.abc.net.au/news' },
+    { name: 'The Sydney Morning Herald', url: 'https://www.smh.com.au' },
+    { name: 'The Age (Melbourne)', url: 'https://www.theage.com.au' },
+    { name: 'The Australian', url: 'https://www.theaustralian.com.au' },
+    { name: 'The Guardian Australia', url: 'https://www.theguardian.com/australia-news' },
+    { name: 'SBS News', url: 'https://www.sbs.com.au/news' },
+    { name: '9News', url: 'https://www.9news.com.au' },
+    { name: '7News', url: 'https://7news.com.au' },
+    { name: 'The Conversation Australia', url: 'https://theconversation.com/australia' },
+  ],
+}
+
+// Global sources for non-country-specific stories
+const GLOBAL_SOURCES = [
+  ...SOURCES_BY_COUNTRY.us,
+  ...SOURCES_BY_COUNTRY.uk,
+  ...SOURCES_BY_COUNTRY.eu,
+  ...SOURCES_BY_COUNTRY.in,
+]
+
+function getSourceUrl(source) {
+  return source.url || 'https://www.example.com'
+}
 
 // ─── Story Generation with Category Tags ────────────────────────────
 const storyData = {
