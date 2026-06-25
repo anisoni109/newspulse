@@ -310,31 +310,6 @@ const storyData = {
   },
 }
 
-function generateStory(id, category = null) {
-  const catId = category || Object.keys(storyData)[Math.floor(Math.random() * Object.keys(storyData).length)]
-  const data = storyData[catId]
-  const headline = data.headlines[Math.floor(Math.random() * data.headlines.length)]
-  const summary = data.summaries[Math.floor(Math.random() * data.summaries.length)]
-  const source = sources[Math.floor(Math.random() * sources.length)]
-
-  // Pick relevant tags for this category
-  const availableTags = TAGS_BY_CATEGORY[catId] || []
-  const tagCount = Math.min(availableTags.length, Math.floor(Math.random() * 2) + 1)
-  const shuffled = [...availableTags].sort(() => Math.random() - 0.5)
-  const tags = shuffled.slice(0, tagCount)
-
-  return {
-    id: `story-${Date.now()}-${id}`,
-    headline,
-    summary,
-    source,
-    link: `https://www.${source.toLowerCase().replace(/\s+/g, '')}.com/story/${id}`,
-    category: catId,
-    tags,
-    time: `${Math.floor(Math.random() * 59) + 1}m ago`,
-  }
-}
-
 // ─── Share Component ────────────────────────────────────────────────
 function ShareButton({ headline, summary }) {
   const [copied, setCopied] = useState(false)
