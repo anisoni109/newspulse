@@ -139,6 +139,20 @@ const NEWS_BY_COUNTRY = {
   },
 }
 
+const SOURCE_SEARCH_URLS = {
+  'Reuters': (q) => `https://www.reuters.com/site-search/?query=${encodeURIComponent(q)}`,
+  'AP News': (q) => `https://apnews.com/search?q=${encodeURIComponent(q)}`,
+  'BBC News': (q) => `https://www.bbc.com/search?q=${encodeURIComponent(q)}`,
+  'Al Jazeera': (q) => `https://www.aljazeera.com/search/${encodeURIComponent(q)}`,
+  'CNN': (q) => `https://www.cnn.com/search?q=${encodeURIComponent(q)}`,
+  'The Guardian': (q) => `https://www.theguardian.com/search?q=${encodeURIComponent(q)}`
+}
+
+function getSourceSearchUrl(source, headline) {
+  const searchFn = SOURCE_SEARCH_URLS[source]
+  return searchFn ? searchFn(headline) : `https://www.google.com/search?q=${encodeURIComponent(source + ' ' + headline)}`
+}
+
 function generateStory(id, category = null) {
   const catId = category || Object.keys(storyData)[Math.floor(Math.random() * Object.keys(storyData).length)]
   const data = storyData[catId]
@@ -157,7 +171,7 @@ function generateStory(id, category = null) {
     headline,
     summary,
     source,
-    link: `https://news.google.com/search?q=${encodeURIComponent(headline)}`,
+    link: getSourceSearchUrl(source, headline),
     category: catId,
     tags,
     time: `${Math.floor(Math.random() * 59) + 1}m ago`,
@@ -175,7 +189,7 @@ function generateCountryStory(id, countryId) {
     headline,
     summary,
     source,
-    link: `https://news.google.com/search?q=${encodeURIComponent(headline)}`,
+    link: getSourceSearchUrl(source, headline),
     category: 'world',
     tags: [countryId.toUpperCase()],
     time: `${Math.floor(Math.random() * 59) + 1}m ago`,
