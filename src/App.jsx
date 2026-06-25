@@ -143,9 +143,12 @@ const SOURCE_SEARCH_URLS = {
   'Reuters': (q) => `https://www.reuters.com/site-search/?query=${encodeURIComponent(q)}`,
   'AP News': (q) => `https://apnews.com/search?q=${encodeURIComponent(q)}`,
   'BBC News': (q) => `https://www.bbc.com/search?q=${encodeURIComponent(q)}`,
-  'Al Jazeera': (q) => `https://www.aljazeera.com/search/${encodeURIComponent(q)}`,
   'CNN': (q) => `https://www.cnn.com/search?q=${encodeURIComponent(q)}`,
-  'The Guardian': (q) => `https://www.theguardian.com/search?q=${encodeURIComponent(q)}`
+  'The Guardian': (q) => `https://www.theguardian.com/search?q=${encodeURIComponent(q)}`,
+  'Bloomberg': (q) => `https://www.bloomberg.com/search?query=${encodeURIComponent(q)}`,
+  'CNBC': (q) => `https://www.cnbc.com/search/?query=${encodeURIComponent(q)}`,
+  'Forbes': (q) => `https://www.forbes.com/search/?q=${encodeURIComponent(q)}`,
+  'TechCrunch': (q) => `https://techcrunch.com/search/${encodeURIComponent(q)}`
 }
 
 function getSourceSearchUrl(source, headline) {
@@ -196,7 +199,7 @@ function generateCountryStory(id, countryId) {
   }
 }
 
-const sources = ['Reuters', 'AP News', 'BBC News', 'Al Jazeera', 'CNN', 'The Guardian']
+const sources = ['Reuters', 'AP News', 'BBC News', 'CNN', 'The Guardian', 'Bloomberg', 'CNBC', 'Forbes', 'TechCrunch']
 
 // ─── Story Generation with Category Tags ────────────────────────────
 const storyData = {
