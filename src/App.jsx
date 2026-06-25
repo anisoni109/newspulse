@@ -2,29 +2,28 @@ import React, { useState, useEffect, useRef, useCallback } from 'react'
 
 // ─── Categories & Tags ──────────────────────────────────────────────
 const CATEGORIES = [
-  { id: 'all', label: 'All Stories', icon: '🔥', color: 'from-red-500 to-orange-500', bg: 'bg-red-50 text-red-700 border-red-200' },
-  { id: 'world', label: 'World', icon: '🌍', color: 'from-blue-600 to-cyan-500', bg: 'bg-blue-50 text-blue-700 border-blue-200' },
-  { id: 'politics', label: 'Politics', icon: '🏛️', color: 'from-purple-600 to-violet-500', bg: 'bg-purple-50 text-purple-700 border-purple-200' },
-  { id: 'business', label: 'Business', icon: '💼', color: 'from-emerald-600 to-teal-500', bg: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-  { id: 'tech', label: 'Technology', icon: '⚡', color: 'from-indigo-600 to-blue-500', bg: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
-  { id: 'sports', label: 'Sports', icon: '🏆', color: 'from-orange-500 to-amber-400', bg: 'bg-orange-50 text-orange-700 border-orange-200' },
-  { id: 'science', label: 'Science', icon: '🔬', color: 'from-teal-600 to-green-500', bg: 'bg-teal-50 text-teal-700 border-teal-200' },
-  { id: 'health', label: 'Health', icon: '❤️‍🩹', color: 'from-pink-600 to-rose-500', bg: 'bg-pink-50 text-pink-700 border-pink-200' },
-  { id: 'entertainment', label: 'Entertainment', icon: '🎬', color: 'from-fuchsia-600 to-purple-500', bg: 'bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200' },
+  { id: 'all', label: 'Trending', icon: '🔥', color: 'from-red-500 to-orange-500', bg: 'bg-red-500/20 text-red-300 border-red-500/30' },
+  { id: 'world', label: 'World', icon: '🌍', color: 'from-blue-600 to-cyan-500', bg: 'bg-blue-500/20 text-blue-300 border-blue-500/30' },
+  { id: 'politics', label: 'Politics', icon: '🏛️', color: 'from-purple-600 to-violet-500', bg: 'bg-purple-500/20 text-purple-300 border-purple-500/30' },
+  { id: 'business', label: 'Business', icon: '💼', color: 'from-emerald-600 to-teal-500', bg: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' },
+  { id: 'tech', label: 'Technology', icon: '⚡', color: 'from-indigo-600 to-blue-500', bg: 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30' },
+  { id: 'sports', label: 'Sports', icon: '🏆', color: 'from-orange-500 to-amber-400', bg: 'bg-orange-500/20 text-orange-300 border-orange-500/30' },
+  { id: 'science', label: 'Science', icon: '🔬', color: 'from-teal-600 to-green-500', bg: 'bg-teal-500/20 text-teal-300 border-teal-500/30' },
+  { id: 'health', label: 'Health', icon: '❤️‍🩹', color: 'from-pink-600 to-rose-500', bg: 'bg-pink-500/20 text-pink-300 border-pink-500/30' },
+  { id: 'entertainment', label: 'Entertainment', icon: '🎬', color: 'from-fuchsia-600 to-purple-500', bg: 'bg-fuchsia-500/20 text-fuchsia-300 border-fuchsia-500/30' },
 ]
 
 const TAGS_BY_CATEGORY = {
-  world: ['Global Politics', 'Regional Conflicts', 'Diplomacy', 'International Relations', 'Humanitarian'],
-  politics: ['US Politics', 'European Union', 'Parliament', 'Elections', 'Policy Reform', 'Supreme Court'],
-  business: ['Markets', 'Startups', 'Real Estate', 'Cryptocurrency', 'Trade Wars', 'IPO'],
-  tech: ['AI & Machine Learning', 'Cybersecurity', 'Consumer Tech', 'Space Tech', 'Quantum Computing', 'Social Media'],
-  sports: ['Football', 'Cricket', 'F1 Racing', 'Olympics', 'Basketball', 'Tennis'],
-  science: ['Climate Science', 'Biotech', 'Physics', 'Astronomy', 'Genetics', 'Oceanography'],
-  health: ['Public Health', 'Mental Health', 'Pharma', 'WHO Updates', 'Pandemic Prep'],
-  entertainment: ['Film & TV', 'Music', 'Gaming', 'Celebrity News', 'Streaming Wars'],
+  world: ['Global', 'Diplomacy', 'Summit', 'Crisis'],
+  politics: ['Elections', 'Senate', 'Reform', 'Policy'],
+  business: ['Markets', 'Finance', 'Startups', 'Economy'],
+  tech: ['AI', 'Computing', 'Cybersecurity', 'Innovation'],
+  sports: ['Football', 'Championship', 'Olympics', 'Athlete'],
+  science: ['Space', 'Climate', 'Fusion', 'Discovery'],
+  health: ['Medicine', 'PublicHealth', 'FDA', 'Research'],
+  entertainment: ['Cinema', 'Streaming', 'Music', 'Gaming'],
 }
 
-// ─── Countries / Regions ────────────────────────────────────────────
 const COUNTRIES = [
   { id: 'us', label: 'USA', flag: '🇺🇸' },
   { id: 'uk', label: 'UK', flag: '🇬🇧' },
@@ -40,858 +39,1006 @@ const COUNTRIES = [
   { id: 'au', label: 'Australia', flag: '🇦🇺' },
 ]
 
-const NEWS_BY_COUNTRY = {
-  us: {
-    headlines: [
-      'White House announces new economic initiative targeting middle-class families across all states',
-      'Federal Reserve signals potential rate adjustment as inflation data shows mixed signals nationwide',
-      'Bipartisan infrastructure bill moves forward with $1.2 trillion in proposed spending for roads, bridges and broadband',
-    ],
-    summaries: ['The proposal has drawn support from both parties after months of negotiations. Key provisions include modernization of transportation networks, expansion of rural broadband access, and investment in clean energy infrastructure across all 50 states.', 'Markets responded positively to the announcement, with major indices reaching new highs. Analysts say the move reflects growing confidence in economic recovery while maintaining price stability.', 'The legislation represents the largest public works investment in decades, with funding distributed across congressional districts. Construction is expected to begin within six months of passage.'],
-  },
-  uk: {
-    headlines: [
-      'Parliament debates landmark digital privacy legislation that could reshape data protection standards',
-      'Bank of England maintains cautious stance on monetary policy amid post-Brexit economic adjustments',
-      'London hosts international climate summit as world leaders gather to discuss carbon reduction targets',
-    ],
-    summaries: ['The proposed framework would give citizens greater control over their personal data and impose stricter penalties on companies that mishandle information. Tech giants are already adjusting their UK operations in anticipation.', 'Governors cited ongoing uncertainty from trade relationships and global economic conditions as key factors in the decision. The pound saw modest movement against major currencies following the announcement.', 'Delegates from over 100 nations will discuss binding commitments for emissions reduction. The UK has pledged to achieve net-zero carbon by 2045, five years ahead of its previous target.'],
-  },
-  eu: {
-    headlines: [
-      'European Commission proposes sweeping AI regulation framework that could set global standards',
-      'EU energy ministers agree on emergency measures to diversify supply chains and reduce dependency',
-      'European Space Agency announces ambitious Mars mission timeline with international partner contributions',
-    ],
-    summaries: ['The comprehensive legislation would classify AI systems by risk level and impose strict requirements on high-risk applications including facial recognition and autonomous decision-making. Companies could face fines of up to 6% of global revenue for non-compliance.', 'The agreement includes provisions for accelerated renewable energy deployment, strategic gas storage mandates, and joint purchasing agreements among member states to strengthen negotiating position with suppliers.', 'The mission aims to land a rover on Mars within the next decade, collecting soil samples that could be returned to Earth in a follow-up campaign. Several European nations are contributing specialized instruments and launch capabilities.'],
-  },
-  in: {
-    headlines: [
-      'India launches ambitious space mission to study solar corona as ISRO expands its deep space program',
-      'Government unveils massive technology manufacturing incentive plan targeting semiconductor production',
-      'Indian economy maintains robust growth trajectory, becoming fastest-growing major economy globally',
-    ],
-    summaries: ['The Chandrayaan follow-up mission will carry advanced instruments to analyze the Sun\'s outer atmosphere and its effects on space weather. ISRO officials say this positions India among the elite group of nations conducting solar research.', 'The incentive package offers substantial subsidies and tax benefits for companies building chip fabrication facilities, aiming to make India a global semiconductor hub within five years. Several multinational corporations have already expressed interest.', 'GDP growth has been driven by strong domestic consumption, digital infrastructure expansion, and a growing services sector. International financial institutions have upgraded their growth forecasts for the country.'],
-  },
-  cn: {
-    headlines: [
-      'China accelerates development of quantum computing network spanning multiple major cities',
-      'Beijing announces new green energy initiative targeting carbon neutrality ahead of 2060 goal',
-      'Chinese manufacturers lead global push in electric vehicle battery technology and production capacity',
-    ],
-    summaries: ['The interconnected quantum network represents a significant step toward practical quantum communication infrastructure. Researchers say the system could revolutionize secure communications and computational capabilities across industries.', 'The initiative includes massive investments in wind, solar, and nuclear energy alongside plans to phase out coal-fired power plants in major urban centers. International observers note China\'s leading position in renewable manufacturing.', 'Chinese battery producers have achieved breakthroughs in energy density and charging speed while reducing costs. The technology is being deployed across domestic electric vehicle fleets and exported globally.'],
-  },
-  ru: {
-    headlines: [
-      'Russia announces expansion of Arctic shipping routes as climate change opens new maritime passages',
-      'Moscow unveils plans for next-generation nuclear power plants to meet growing energy demands',
-      'Russian scientists contribute to international space station with new life support system technology',
-    ],
-    summaries: ['The Northern Sea Route has seen significantly increased commercial traffic in recent years, reducing shipping times between Europe and Asia by up to 40%. Russia is investing heavily in icebreaker fleet expansion and port infrastructure.', 'The new reactor designs promise improved safety features and waste reduction compared to previous generations. Several Central Asian nations have expressed interest in adopting the technology for their growing energy needs.', 'The life support system uses advanced recycling technology that could significantly reduce resource requirements for long-duration space missions. International partners are evaluating the technology for future lunar and Mars missions.'],
-  },
-  me: {
-    headlines: [
-      'Middle East peace talks resume with renewed international mediation efforts and confidence-building measures',
-      'Gulf nations accelerate economic diversification plans beyond oil with massive technology investments',
-      'Regional countries collaborate on desalination technology to address growing water scarcity challenges',
-    ],
-    summaries: ['The negotiations include discussions on border security, trade agreements, and humanitarian corridor access. International mediators express cautious optimism about the current round of talks.', 'Sovereign wealth funds are directing billions toward technology hubs, renewable energy projects, and tourism infrastructure as part of long-term economic transformation strategies. Several international tech companies have opened regional headquarters.', 'New desalination plants using solar-powered reverse osmosis technology are being deployed across coastal nations. The innovation significantly reduces energy costs compared to traditional methods while expanding freshwater supply.'],
-  },
-  africa: {
-    headlines: [
-      'African Continental Free Trade Area shows early success as intra-Africa commerce grows significantly',
-      'East African tech hubs attract record venture capital investment in fintech and agricultural technology',
-      'Continental renewable energy grid project connects multiple nations with solar and wind power infrastructure',
-    ],
-    summaries: ['The trade agreement has reduced tariffs on 90% of goods traded between member states, leading to measurable increases in cross-border commerce. Small and medium enterprises are particularly benefiting from expanded market access.', 'Startups across Kenya, Nigeria, and South Africa are raising unprecedented funding rounds, with mobile payment platforms and precision agriculture tools leading investor interest. The ecosystem is creating thousands of tech jobs.', 'The ambitious project links national power grids through high-voltage transmission lines powered by solar farms in the Sahara and wind installations along coastal regions. Several European development banks are providing financing.'],
-  },
-  sa: {
-    headlines: [
-      'Brazil leads Amazon conservation efforts with record funding for rainforest protection programs',
-      'Argentina emerges as major player in lithium production, fueling global electric vehicle battery supply chain',
-      'South American nations collaborate on massive renewable energy project spanning multiple countries',
-    ],
-    summaries: ['The Brazilian government has allocated unprecedented resources to satellite monitoring, indigenous land protection, and sustainable development programs. Early data shows a significant reduction in deforestation rates compared to previous years.', 'Argentina holds some of the world\'s largest lithium reserves and is rapidly expanding extraction operations. The metal is essential for electric vehicle batteries, positioning the country as a critical supplier in the clean energy transition.', 'The binational project combines hydroelectric dams along major rivers with massive solar installations in arid regions. The combined capacity will power millions of homes while reducing reliance on fossil fuel generation.'],
-  },
-  jp: {
-    headlines: [
-      'Japan advances robotics research with humanoid robots designed for elderly care and disaster response',
-      'Tokyo stock exchange implements sweeping reforms to attract international investors and boost corporate governance',
-      'Japanese scientists develop breakthrough battery technology promising faster charging and longer lifespan',
-    ],
-    summaries: ['The new generation of care robots can assist with mobility, monitor vital signs, and provide companionship for elderly patients. Japan\'s aging population has driven significant investment in automation solutions for healthcare.', 'The reforms include stricter requirements for independent board members, improved shareholder rights, and enhanced disclosure standards. Foreign investors have responded positively, with increased inflows into Japanese equities.', 'The solid-state battery prototype achieves charging times under 10 minutes while maintaining performance over thousands of charge cycles. Several major automakers are already in discussions about licensing the technology.'],
-  },
-  kr: {
-    headlines: [
-      'South Korea leads global 5G adoption with nationwide coverage and next-generation network testing underway',
-      'Korean semiconductor industry announces massive investment in advanced chip manufacturing capabilities',
-      'K-culture phenomenon drives record tourism as global interest in Korean entertainment and cuisine surges',
-    ],
-    summaries: ['The country has achieved the world\'s fastest 5G deployment with coverage reaching even rural areas. Trials for 6G technology have already begun, with researchers targeting terabit-speed communications by 2030.', 'Major chipmakers are investing billions in new fabrication facilities producing next-generation processors for AI and high-performance computing applications. The investment reinforces South Korea\'s position as a semiconductor powerhouse.', 'Korean dramas, music, and food continue to gain massive global audiences, driving tourism to record levels. Cultural exports have become a significant contributor to the national economy, with dedicated government support programs.'],
-  },
-  au: {
-    headlines: [
-      'Australia accelerates renewable energy transition with world\'s largest solar farm coming online',
-      'Australian researchers make breakthrough in rare earth mineral processing critical for technology manufacturing',
-      'Sydney and Melbourne lead global rankings in quality of life as urban development projects deliver results',
-    ],
-    summaries: ['The massive solar installation will generate enough electricity to power hundreds of thousands of homes, marking a milestone in Australia\'s transition away from coal. The project combines solar panels with battery storage for round-the-clock power delivery.', 'New processing techniques dramatically reduce the environmental impact and cost of extracting rare earth elements essential for electronics, electric vehicles, and defense applications. Several international technology companies have expressed interest in supply agreements.', 'Urban renewal projects including expanded public transit, green spaces, and affordable housing initiatives have significantly improved livability metrics. The improvements have attracted both domestic and international migration to major cities.'],
-  },
-}
-
-const SOURCE_SEARCH_URLS = {
-  'Associated Press': (q) => `https://apnews.com/search?q=${encodeURIComponent(q)}`,
-  'Reuters US': (q) => `https://www.reuters.com/site-search/?query=${encodeURIComponent(q)}`,
-  'The New York Times': (q) => `https://www.nytimes.com/search?query=${encodeURIComponent(q)}`,
-  'The Washington Post': (q) => `https://www.washingtonpost.com/sitemaps/query?query=${encodeURIComponent(q)}`,
-  'USA Today': (q) => `https://www.usatoday.com/search/results/?q=${encodeURIComponent(q)}`,
-  'Wall Street Journal': (q) => `https://www.wsj.com/articles/${encodeURIComponent(q).toLowerCase().replace(/\s+/g, '-')}`,
-  'CNN': (q) => `https://www.cnn.com/search?q=${encodeURIComponent(q)}`,
-  'Fox News': (q) => `https://www.foxnews.com/search-results/search/#q=${encodeURIComponent(q)}`,
-  'NBC News': (q) => `https://www.nbcnews.com/search?query=${encodeURIComponent(q)}`,
-  'ABC News': (q) => `https://abcnews.go.com/search?q=${encodeURIComponent(q)}`,
-  'CBS News': (q) => `https://www.cbsnews.com/search/?q=${encodeURIComponent(q)}`,
-  'NPR': (q) => `https://www.npr.org/search/?query=${encodeURIComponent(q)}`,
-  'Bloomberg': (q) => `https://www.bloomberg.com/search?query=${encodeURIComponent(q)}`,
-  'CNBC': (q) => `https://www.cnbc.com/search/?query=${encodeURIComponent(q)}`,
-  'The Hill': (q) => `https://thehill.com/search/?q=${encodeURIComponent(q)}`,
-  'Politico': (q) => `https://www.politico.com/search?q=${encodeURIComponent(q)}`,
-  'Forbes': (q) => `https://www.forbes.com/search/?q=${encodeURIComponent(q)}`,
-  'Business Insider': (q) => `https://www.businessinsider.com/search?q=${encodeURIComponent(q)}`,
-  'The Verge': (q) => `https://www.theverge.com/search?q=${encodeURIComponent(q)}`,
-  'Wired': (q) => `https://www.wired.com/search/?query=${encodeURIComponent(q)}`,
-  'Time Magazine': (q) => `https://time.com/search/?q=${encodeURIComponent(q)}`,
-  'Newsweek': (q) => `https://www.newsweek.com/search?q=${encodeURIComponent(q)}`,
-  'BBC News': (q) => `https://www.bbc.com/news/search?q=${encodeURIComponent(q)}`,
-  'The Guardian UK': (q) => `https://www.theguardian.com/uk-news?q=${encodeURIComponent(q)}`,
-  'Sky News': (q) => `https://news.sky.com/search/?query=${encodeURIComponent(q)}`,
-  'Euronews': (q) => `https://www.euronews.com/search?q=${encodeURIComponent(q)}`,
-  'The Times of India': (q) => `https://timesofindia.indiatimes.com/articleshow/${encodeURIComponent(q).toLowerCase().replace(/\s+/g, '-').substring(0, 50)}.cms`,
-  'The Hindu': (q) => `https://www.thehindu.com/search?q=${encodeURIComponent(q)}`,
-  'NDTV': (q) => `https://ndtv.com/search?keyword=${encodeURIComponent(q)}`,
-  'South China Morning Post': (q) => `https://www.scmp.com/search?q=${encodeURIComponent(q)}`,
-  'Al Jazeera': (q) => `https://www.aljazeera.com/search/?query=${encodeURIComponent(q)}`,
-  'NHK World': (q) => `https://www3.nhk.or.jp/nhkworld/en/search/?q=${encodeURIComponent(q)}`,
-  'Japan Times': (q) => `https://www.japantimes.co.jp/search/?q=${encodeURIComponent(q)}`,
-  'ABC News (Australia)': (q) => `https://www.abc.net.au/news/search?q=${encodeURIComponent(q)}`,
-}
-
-function getSourceSearchUrl(source, headline) {
-  const searchFn = SOURCE_SEARCH_URLS[source]
-  if (searchFn) return searchFn(headline)
-  // Fallback: try to extract base domain and construct a reasonable URL
-  return `https://www.google.com/search?q=${encodeURIComponent(headline + ' site:' + source.toLowerCase().replace(/\s+/g, ''))}`
-}
-
-function generateStory(id, category = null) {
-  const catId = category || Object.keys(storyData)[Math.floor(Math.random() * Object.keys(storyData).length)]
-  const data = storyData[catId]
-  // Pick a random index and use the SAME index for headline + summary (paired)
-  const idx = Math.floor(Math.random() * data.length)
-  const entry = data[idx]
-
-  // Pick a random global source with real URL
-  const sourceObj = GLOBAL_SOURCES[Math.floor(Math.random() * GLOBAL_SOURCES.length)]
-
-  // Pick relevant tags for this category
-  const availableTags = TAGS_BY_CATEGORY[catId] || []
-  const tagCount = Math.min(availableTags.length, Math.floor(Math.random() * 2) + 1)
-  const shuffled = [...availableTags].sort(() => Math.random() - 0.5)
-  const tags = shuffled.slice(0, tagCount)
-
-  return {
-    id: `story-${Date.now()}-${id}`,
-    headline: entry.headline,
-    summary: entry.summary,
-    source: sourceObj.name,
-    link: getSourceSearchUrl(sourceObj.name, entry.headline),
-    category: catId,
-    tags,
-    time: `${Math.floor(Math.random() * 59) + 1}m ago`,
-  }
-}
-
-function generateCountryStory(id, countryId) {
-  const data = NEWS_BY_COUNTRY[countryId] || storyData.world
-  // Pick a random index and use the SAME index for headline + summary (paired)
-  const idx = Math.floor(Math.random() * data.headlines.length)
-  const headline = data.headlines[idx]
-  const summary = data.summaries[idx]
-
-  // Pick a random source specific to this country/region
-  const countrySources = SOURCES_BY_COUNTRY[countryId] || GLOBAL_SOURCES
-  const sourceObj = countrySources[Math.floor(Math.random() * countrySources.length)]
-
-  return {
-    id: `story-${Date.now()}-${id}`,
-    headline,
-    summary,
-    source: sourceObj.name,
-    link: getSourceSearchUrl(sourceObj.name, headline),
-    category: 'world',
-    tags: [countryId.toUpperCase()],
-    time: `${Math.floor(Math.random() * 59) + 1}m ago`,
-  }
-}
-
-// ─── 100+ Real Accredited News Sources Per Country/Region ──────────
-const SOURCES_BY_COUNTRY = {
-  us: [
-    { name: 'Associated Press', url: 'https://apnews.com' },
-    { name: 'Reuters US', url: 'https://www.reuters.com/us/' },
-    { name: 'The New York Times', url: 'https://www.nytimes.com' },
-    { name: 'The Washington Post', url: 'https://www.washingtonpost.com' },
-    { name: 'USA Today', url: 'https://www.usatoday.com' },
-    { name: 'Wall Street Journal', url: 'https://www.wsj.com' },
-    { name: 'CNN', url: 'https://www.cnn.com' },
-    { name: 'Fox News', url: 'https://www.foxnews.com' },
-    { name: 'NBC News', url: 'https://www.nbcnews.com' },
-    { name: 'ABC News', url: 'https://abcnews.go.com' },
-    { name: 'CBS News', url: 'https://www.cbsnews.com' },
-    { name: 'NPR', url: 'https://www.npr.org' },
-    { name: 'Bloomberg', url: 'https://www.bloomberg.com' },
-    { name: 'CNBC', url: 'https://www.cnbc.com' },
-    { name: 'The Hill', url: 'https://thehill.com' },
-    { name: 'Politico', url: 'https://www.politico.com' },
-    { name: 'The Atlantic', url: 'https://www.theatlantic.com' },
-    { name: 'New York Magazine', url: 'https://nymag.com' },
-    { name: 'Los Angeles Times', url: 'https://www.latimes.com' },
-    { name: 'Chicago Tribune', url: 'https://www.chicagotribune.com' },
-    { name: 'The Guardian US', url: 'https://www.theguardian.com/us-news' },
-    { name: 'Forbes', url: 'https://www.forbes.com' },
-    { name: 'Business Insider', url: 'https://www.businessinsider.com' },
-    { name: 'The Verge', url: 'https://www.theverge.com' },
-    { name: 'Wired', url: 'https://www.wired.com' },
-    { name: 'Time Magazine', url: 'https://time.com' },
-    { name: 'Newsweek', url: 'https://www.newsweek.com' },
-    { name: 'U.S. News & World Report', url: 'https://www.usnews.com' },
-    { name: 'National Geographic', url: 'https://www.nationalgeographic.com' },
-    { name: 'Scientific American', url: 'https://www.scientificamerican.com' },
+// ─── Real RSS Feeds Map ─────────────────────────────────────────────
+const CATEGORY_FEEDS = {
+  all: [
+    'https://news.google.com/rss?hl=en-US&gl=US&ceid=US:en'
   ],
-  uk: [
-    { name: 'BBC News', url: 'https://www.bbc.com/news' },
-    { name: 'The Guardian UK', url: 'https://www.theguardian.com/uk-news' },
-    { name: 'The Times', url: 'https://www.thetimes.com' },
-    { name: 'The Daily Telegraph', url: 'https://www.telegraph.co.uk' },
-    { name: 'The Independent', url: 'https://www.independent.co.uk' },
-    { name: 'The Financial Times', url: 'https://www.ft.com' },
-    { name: 'The Evening Standard', url: 'https://www.standard.co.uk' },
-    { name: 'The Metro', url: 'https://metro.co.uk' },
-    { name: 'The Sun', url: 'https://www.thesun.co.uk' },
-    { name: 'Daily Mail', url: 'https://www.dailymail.co.uk' },
-    { name: 'The Express', url: 'https://www.express.co.uk' },
-    { name: 'Sky News', url: 'https://news.sky.com' },
-    { name: 'ITV News', url: 'https://www.itv.com/news' },
-    { name: 'Channel 4 News', url: 'https://www.channel4.com/news' },
-    { name: 'The Scotsman', url: 'https://www.scotsman.com' },
-    { name: 'The Herald (Glasgow)', url: 'https://www.heraldscotland.com' },
-    { name: 'Wales Online', url: 'https://www.walesonline.co.uk' },
-    { name: 'Belfast Telegraph', url: 'https://www.belfasttelegraph.co.uk' },
-    { name: 'The Spectator', url: 'https://www.spectator.co.uk' },
-    { name: 'New Statesman', url: 'https://www.newstatesman.com' },
-  ],
-  eu: [
-    { name: 'Euronews', url: 'https://www.euronews.com' },
-    { name: 'Politico Europe', url: 'https://www.politico.eu' },
-    { name: 'Der Spiegel (Germany)', url: 'https://www.spiegel.de' },
-    { name: 'Frankfurter Allgemeine (Germany)', url: 'https://www.faz.net' },
-    { name: 'Le Monde (France)', url: 'https://www.lemonde.fr' },
-    { name: 'Die Zeit (Germany)', url: 'https://www.zeit.de' },
-    { name: 'El País (Spain)', url: 'https://elpais.com' },
-    { name: 'Corriere della Sera (Italy)', url: 'https://www.corriere.it' },
-    { name: 'De Standaard (Belgium)', url: 'https://www.standaard.be' },
-    { name: 'NRC Handelsblad (Netherlands)', url: 'https://www.nrc.nl' },
-    { name: 'Svenska Dagbladet (Sweden)', url: 'https://www.svd.se' },
-    { name: 'Aftenposten (Norway)', url: 'https://www.aftenposten.no' },
-    { name: 'Helsingin Sanomat (Finland)', url: 'https://www.hs.fi' },
-    { name: 'Osterreichische Zeitung (Austria)', url: 'https://www.derstandard.at' },
-    { name: 'Rzeczpospolita (Poland)', url: 'https://www.rp.pl' },
-  ],
-  in: [
-    { name: 'The Times of India', url: 'https://timesofindia.indiatimes.com' },
-    { name: 'The Hindu', url: 'https://www.thehindu.com' },
-    { name: 'NDTV', url: 'https://www.ndtv.com' },
-    { name: 'The Indian Express', url: 'https://indianexpress.com' },
-    { name: 'Hindustan Times', url: 'https://www.hindustantimes.com' },
-    { name: 'India Today', url: 'https://www.indiatoday.in' },
-    { name: 'The Economic Times', url: 'https://economictimes.indiatimes.com' },
-    { name: 'Mint', url: 'https://www.livemint.com' },
-    { name: 'The Wire', url: 'https://thewire.in' },
-    { name: 'Scroll.in', url: 'https://scroll.in' },
-    { name: 'Newslaundry', url: 'https://www.newslaundry.com' },
-    { name: 'Firstpost', url: 'https://www.firstpost.com' },
-    { name: 'The Quint', url: 'https://www.thequint.com' },
-    { name: 'BBC News India', url: 'https://www.bbc.com/news/world/south_asia/india' },
-    { name: 'Reuters India', url: 'https://www.reuters.com/world/asia-pacific/india/' },
-    { name: 'The Print', url: 'https://theprint.in' },
-    { name: 'Business Standard', url: 'https://www.business-standard.com' },
-    { name: 'Financial Express', url: 'https://www.financialexpress.com' },
-  ],
-  cn: [
-    { name: 'Xinhua News', url: 'http://www.xinhuanet.com/english' },
-    { name: 'China Daily', url: 'https://www.chinadaily.com.cn' },
-    { name: 'Global Times', url: 'https://www.globaltimes.cn' },
-    { name: 'South China Morning Post', url: 'https://www.scmp.com' },
-    { name: 'Caixin Global', url: 'https://www.caixinglobal.com' },
-    { name: 'Sixth Tone', url: 'https://www.sixthtone.com' },
-    { name: 'Shanghai Daily', url: 'http://www.shanghaidaily.com' },
-    { name: 'Beijing Review', url: 'http://www.beijingreview.com.cn' },
-  ],
-  ru: [
-    { name: 'TASS', url: 'https://tass.com' },
-    { name: 'RIA Novosti', url: 'https://ria.ru' },
-    { name: 'Interfax', url: 'https://www.interfax.ru/english' },
-    { name: 'Moscow Times', url: 'https://www.themoscowtimes.com' },
-    { name: 'Kommersant', url: 'https://www.kommersant.com' },
-    { name: 'Novaya Gazeta', url: 'https://www.novayagazeta.ru/english' },
-  ],
-  me: [
-    { name: 'Al Jazeera (Qatar)', url: 'https://www.aljazeera.com' },
-    { name: 'Arab News (Saudi Arabia)', url: 'https://www.arabnews.com' },
-    { name: 'The Daily Star (Lebanon)', url: 'https://www.dailystar.com.lb' },
-    { name: 'Haaretz (Israel)', url: 'https://www.haaretz.com' },
-    { name: 'Jerusalem Post', url: 'https://www.jpost.com' },
-    { name: 'Egypt Today', url: 'https://www.egypttoday.com' },
-    { name: 'Middle East Eye', url: 'https://www.middleeasteye.net' },
-    { name: 'Gulf News (UAE)', url: 'https://gulfnews.com' },
-    { name: 'The National (UAE)', url: 'https://www.thenationalnews.com' },
-    { name: 'Kuwait Times', url: 'https://www.kuwaittimes.com' },
-  ],
-  africa: [
-    { name: 'Al Jazeera Africa', url: 'https://www.aljazeera.com/africa/' },
-    { name: 'BBC News Africa', url: 'https://www.bbc.com/news/world/africa' },
-    { name: 'Reuters Africa', url: 'https://www.reuters.com/world/africa/' },
-    { name: 'The Citizen (Tanzania)', url: 'https://www.thecitizen.co.tz' },
-    { name: 'Daily Nation (Kenya)', url: 'https://www.nation.africa' },
-    { name: 'The Star (Kenya)', url: 'https://www.the-star.co.ke' },
-    { name: 'Punch Newspapers (Nigeria)', url: 'https://punchng.com' },
-    { name: 'Vanguard (Nigeria)', url: 'https://www.vanguardngr.com' },
-    { name: 'Daily Trust (Nigeria)', url: 'https://dailytrust.com' },
-    { name: 'Mail & Guardian (South Africa)', url: 'https://mg.co.za' },
-    { name: 'IOL (South Africa)', url: 'https://www.iol.co.za' },
-    { name: 'News24 (South Africa)', url: 'https://www.news24.com' },
-    { name: 'The Monitor (Uganda)', url: 'https://www.monitor.co.ug' },
-    { name: 'GhanaWeb', url: 'https://www.ghanaweb.com' },
-    { name: 'Daily Graphic (Ghana)', url: 'https://www.graphic.com.gh' },
-    { name: 'The Namibian', url: 'https://www.namibian.com.na' },
-    { name: 'The Zimbabwean', url: 'https://www.thezimbabwean.co.zw' },
-  ],
-  sa: [
-    { name: 'O Globo (Brazil)', url: 'https://oglobo.globo.com' },
-    { name: 'Folha de S.Paulo (Brazil)', url: 'https://www.folha.uol.com.br' },
-    { name: 'Estadão (Brazil)', url: 'https://www.estadao.com.br' },
-    { name: 'El País Brasil', url: 'https://brasil.elpais.com' },
-    { name: 'Clarín (Argentina)', url: 'https://www.clarin.com' },
-    { name: 'La Nación (Argentina)', url: 'https://www.lanacion.com.ar' },
-    { name: 'El Tiempo (Colombia)', url: 'https://www.eltiempo.com' },
-    { name: 'El Espectador (Colombia)', url: 'https://www.elespectador.com' },
-    { name: 'La República (Peru)', url: 'https://larepublica.pe' },
-    { name: 'El Comercio (Peru)', url: 'https://elcomercio.pe' },
-    { name: 'Tal Cual (Venezuela)', url: 'https://www.talcualdigital.com' },
-    { name: 'Reuters Latin America', url: 'https://www.reuters.com/world/latin-america/' },
-  ],
-  jp: [
-    { name: 'NHK World', url: 'https://www3.nhk.or.jp/nhkworld/' },
-    { name: 'Japan Times', url: 'https://www.japantimes.co.jp' },
-    { name: 'Asahi Shimbun', url: 'https://www.asahi.com/ajw/' },
-    { name: 'Yomiuri Shimbun', url: 'https://www.yomiuri.co.jp' },
-    { name: 'Mainichi Shimbun', url: 'https://mainichi.jp/english' },
-    { name: 'Nikkei Asia', url: 'https://asia.nikkei.com' },
-    { name: 'The Japan News', url: 'https://the-japan-news.com' },
-  ],
-  kr: [
-    { name: 'Yonhap News (Korea)', url: 'https://en.yna.co.kr' },
-    { name: 'Korea Herald', url: 'https://www.koreaherald.com' },
-    { name: 'Korea Times', url: 'https://www.koreatimes.co.kr' },
-    { name: 'Chosun Ilbo (English)', url: 'http://english.chosun.com' },
-    { name: 'JoongAng Ilbo', url: 'http://korean.yonhapnews.co.kr' },
-    { name: 'Hankyoreh', url: 'https://www.hani.co.kr/arti/english' },
-  ],
-  au: [
-    { name: 'ABC News (Australia)', url: 'https://www.abc.net.au/news' },
-    { name: 'The Sydney Morning Herald', url: 'https://www.smh.com.au' },
-    { name: 'The Age (Melbourne)', url: 'https://www.theage.com.au' },
-    { name: 'The Australian', url: 'https://www.theaustralian.com.au' },
-    { name: 'The Guardian Australia', url: 'https://www.theguardian.com/australia-news' },
-    { name: 'SBS News', url: 'https://www.sbs.com.au/news' },
-    { name: '9News', url: 'https://www.9news.com.au' },
-    { name: '7News', url: 'https://7news.com.au' },
-    { name: 'The Conversation Australia', url: 'https://theconversation.com/australia' },
-  ],
-}
-
-// Global sources for non-country-specific stories
-const GLOBAL_SOURCES = [
-  ...SOURCES_BY_COUNTRY.us,
-  ...SOURCES_BY_COUNTRY.uk,
-  ...SOURCES_BY_COUNTRY.eu,
-  ...SOURCES_BY_COUNTRY.in,
-]
-
-function getSourceUrl(source) {
-  return source.url || 'https://www.example.com'
-}
-
-// ─── Story Generation with Category Tags ────────────────────────────
-const storyData = {
   world: [
-    { headline: 'Global Leaders Convene Emergency Summit to Address Escalating Regional Conflicts Across Three Continents', summary: 'Representatives from over 40 nations gathered for emergency diplomatic talks aimed at de-escalating tensions in conflict zones. The summit produced initial frameworks for ceasefires and humanitarian aid corridors, though key parties remain divided on enforcement mechanisms.' },
-    { headline: 'Historic International Climate Agreement Enters Force with Binding Emissions Targets for 190 Nations', summary: 'The landmark accord establishes legally binding carbon reduction milestones through 2035, backed by a $500 billion green transition fund. Developing nations will receive technology transfer and financial support to accelerate their shift away from fossil fuels.' },
-    { headline: 'United Nations Launches Largest Peacekeeping Operation in Decades as Multiple Crises Demand Coordinated Response', summary: 'The Security Council authorized a multinational force of 30,000 personnel to stabilize regions facing simultaneous humanitarian and political emergencies. The operation will focus on protecting civilian populations and facilitating refugee repatriation.' },
-    { headline: 'Global Supply Chain Restructuring Accelerates as Nations Prioritize Resilience Over Cost Efficiency', summary: 'Major economies are reshoring critical manufacturing capabilities following years of disruption, with trillions in investment flowing into domestic production capacity. Experts predict a fundamental shift in international trade patterns over the coming decade.' },
-    { headline: 'International Court Issues Landmark Ruling on Maritime Boundaries, Resolving Decades-Long Dispute Between Nations', summary: 'The decision establishes new precedents for territorial waters and exclusive economic zones, affecting fishing rights and offshore resource exploration across a vast ocean region. Several neighboring countries have expressed intent to appeal aspects of the judgment.' },
-    { headline: 'World Bank Announces Sweeping Reform Package to Better Serve Developing Economies Facing Debt Crises', summary: 'The restructuring includes expanded lending facilities, extended repayment periods, and debt sustainability frameworks designed to prevent default cascades. Critics argue the reforms do not go far enough in addressing systemic inequities in global finance.' },
+    'https://rss.nytimes.com/services/xml/rss/nyt/World.xml',
+    'http://feeds.bbci.co.uk/news/world/rss.xml'
   ],
   politics: [
-    { headline: 'Bipartisan Coalition Forges Unlikely Alliance to Pass Comprehensive Government Transparency and Reform Package', summary: 'The legislation introduces mandatory ethics training, stricter lobbying disclosure requirements, and independent oversight of political financing. Both progressive and conservative lawmakers found common ground on anti-corruption measures after months of closed-door negotiations.' },
-    { headline: 'Electoral System Overhaul Gains Momentum as Cross-Party Commission Recommends Ranked-Choice Voting Nationwide', summary: 'The proposed reforms would transform how citizens select representatives, potentially reducing partisan polarization by encouraging candidates to appeal beyond their base. Several states have already begun pilot programs ahead of potential federal adoption.' },
-    { headline: 'Supreme Court Decision on Digital Privacy Sets New Precedent for Government Surveillance Powers in the Internet Age', summary: 'The ruling requires law enforcement agencies to obtain judicial warrants before accessing citizens\' digital communications, marking a significant expansion of privacy protections. Technology companies must now comply with updated data preservation standards.' },
-    { headline: 'Federal Budget Negotiations Reach Critical Juncture as Deadline Approaches for Funding Multiple Government Agencies', summary: 'Lawmakers face difficult choices between defense spending increases and domestic program funding amid growing national debt. The standoff highlights deep ideological divides that could impact government operations if a compromise is not reached.' },
-    { headline: 'New Executive Order Establishes National Framework for Artificial Intelligence Governance and Safety Standards', summary: 'The directive mandates rigorous testing protocols for advanced AI systems before deployment, creates an oversight body within the Department of Commerce, and requires companies to report safety incidents. Industry leaders have mixed reactions to the regulatory approach.' },
-    { headline: 'Grassroots Movement Successfully Pushes Local Governments to Adopt Citizen Assembly Model for Policy Deliberation', summary: 'Randomly selected citizen panels are being used in over 50 municipalities to provide nonpartisan recommendations on contentious issues. Early results show higher public trust in outcomes compared to traditional legislative processes.' },
+    'https://rss.nytimes.com/services/xml/rss/nyt/Politics.xml',
+    'https://rss.politico.com/politics-policy.xml'
   ],
   business: [
-    { headline: 'Central Banks Coordinate Unprecedented Monetary Policy Shift as Global Economic Indicators Signal Turning Point', summary: 'Synchronized adjustments to interest rate policies reflect growing confidence that inflation is being brought under control without triggering recession. Markets rallied on the news, with major indices posting their strongest gains in over a year.' },
-    { headline: 'Major Technology Corporation Commits $15 Billion to Build Domestic Semiconductor Manufacturing Hub, Promising 10,000 Jobs', summary: 'The facility will produce advanced chips using next-generation fabrication processes, reducing dependence on overseas supply chains. The investment qualifies for substantial government incentives under the national semiconductor competitiveness initiative.' },
-    { headline: 'Global Renewable Energy Investment Surpasses Fossil Fuel Spending for First Time, Marking Historic Economic Tipping Point', summary: 'Capital flows into solar, wind, and battery storage technologies now outpace traditional energy investments by a significant margin. The shift is driven by falling technology costs, supportive policy frameworks, and growing institutional investor demand for sustainable assets.' },
-    { headline: 'International Trade Negotiations Produce New Framework Aimed at Reducing Tariffs on Critical Green Technology Components', summary: 'The agreement covers solar panels, wind turbine parts, electric vehicle batteries, and related materials across 30 participating nations. Implementation is expected to accelerate the global transition to clean energy by lowering costs for developing economies.' },
-    { headline: 'Small Business Innovation Index Reaches Record High as Entrepreneurship Surges in AI and Clean Technology Sectors', summary: 'New ventures launched in emerging technology fields are creating disproportionate economic value, with venture capital funding concentrated in a growing number of specialized sectors. Small business administration programs report record application volumes.' },
-    { headline: 'Global Housing Market Shows Signs of Stabilization as Mortgage Rates Peak and First-Time Buyer Programs Gain Traction', summary: 'Affordability initiatives targeting young professionals and essential workers are beginning to increase transaction volumes in previously frozen markets. Economists caution that structural supply shortages will keep prices elevated in many regions for the foreseeable future.' },
+    'https://www.cnbc.com/id/10001147/device/rss/rss.html',
+    'https://rss.nytimes.com/services/xml/rss/nyt/Business.xml'
   ],
   tech: [
-    { headline: 'Next-Generation Artificial Intelligence Model Demonstrates Breakthrough Reasoning Abilities Across Scientific Research Domains', summary: 'The system has shown remarkable capacity for hypothesis generation and experimental design, already assisting researchers in drug discovery and materials science. Developers emphasize the tool is designed to augment rather than replace human scientific judgment.' },
-    { headline: 'Major Cybersecurity Framework Overhaul Proposed After Series of Sophisticated Attacks Target Critical Infrastructure Systems', summary: 'The proposed standards would require real-time threat monitoring, mandatory vulnerability disclosure within 24 hours, and independent security audits for all critical sector operators. Compliance deadlines are set to begin within six months of adoption.' },
-    { headline: 'Quantum Computing Startup Achieves Practical Error Correction Milestone, Bringing Commercial Applications Closer to Reality', summary: 'The breakthrough in maintaining stable quantum states for extended periods addresses one of the field\'s most persistent challenges. Several financial and pharmaceutical companies have already signed letters of intent to access early quantum computing resources.' },
-    { headline: 'Open-Source Movement Gains Major Corporate Backing as Tech Giants Collaborate on Shared Infrastructure Standards', summary: 'A consortium of leading technology companies has committed significant resources to developing interoperable, transparent platforms for cloud computing and data management. The initiative aims to reduce vendor lock-in and promote innovation through collaborative development.' },
-    { headline: 'Solid-State Battery Technology Achieves Commercial Viability, Promising Electric Vehicles with 600-Mile Range and 15-Minute Charging', summary: 'The new battery architecture eliminates flammable liquid electrolytes while dramatically increasing energy density. Multiple automakers have announced plans to incorporate the technology into next-generation vehicle platforms starting within three years.' },
-    { headline: 'Decentralized Social Media Protocol Gains Millions of Users Seeking Alternatives to Centralized Platform Governance', summary: 'The open protocol allows users to control their data while maintaining compatibility with existing social media applications. Developers are building tools that enable community-driven content moderation without sacrificing free expression principles.' },
+    'https://www.wired.com/feed/rss',
+    'https://techcrunch.com/feed/',
+    'https://www.theverge.com/rss/index.xml'
   ],
   sports: [
-    { headline: 'Unprecedented Underdog Victory Captivates Global Audience as Last-Place Team Clinches Championship in Dramatic Fashion', summary: 'The team\'s remarkable turnaround from worst-to-first was built on innovative tactical approaches and exceptional performances from previously overlooked players. Sports analysts are calling it the most improbable championship run in the history of the sport.' },
-    { headline: 'International Olympic Committee Announces Bold New Format for Future Games Emphasizing Sustainability and Urban Integration', summary: 'Upcoming editions will utilize 95% existing or temporary venues, with host cities required to demonstrate long-term community benefit plans. The reforms aim to reduce costs and address growing concerns about the financial burden of hosting the Olympics.' },
-    { headline: 'Revolutionary Player Tracking Technology Transforms Coaching Strategies and Enhances Athlete Performance Analysis', summary: 'Advanced sensor systems combined with machine learning analytics provide real-time insights into player biomechanics, fatigue levels, and tactical positioning. League officials have approved the technology after successful trials demonstrated measurable improvements in player safety.' },
-    { headline: 'Women\'s Sports Viewership Reaches All-Time High as Investment in Professional Leagues Drives Quality and Accessibility', summary: 'Broadcast ratings for women\'s professional competitions have tripled over the past three years, attracting major sponsorship deals and increasing athlete compensation. The growth is attributed to improved production values, star player development, and expanded media coverage.' },
-    { headline: 'Historic International Rivalry Renewed as Two Nations Face Off in World Cup Qualifier That Draws Record Global Audience', summary: 'The match showcased the highest level of competitive football, with tactical innovations from both coaches creating a compelling contest. Fans worldwide tuned in to witness what many are calling the most significant sporting event of the year.' },
-    { headline: 'E-Sports Prize Pools Now Rival Traditional Sports as Competitive Gaming Attracts Major Corporate Sponsorship and Television Deals', summary: 'The top gaming tournaments now offer prize money comparable to major golf championships and tennis grand slams. Broadcast networks are investing heavily in e-sports coverage, recognizing the demographic appeal and growing global fanbase.' },
+    'https://www.espn.com/espn/rss/news',
+    'http://feeds.bbci.co.uk/sport/rss.xml'
   ],
   science: [
-    { headline: 'Deep Space Observatory Captures Most Detailed Images Ever of Galaxy Formation During Universe\'s First Billion Years', summary: 'The observations reveal unexpectedly massive early galaxies that challenge existing models of cosmic evolution. Scientists are revising theories about how quickly matter condensed into the structures we see in the modern universe.' },
-    { headline: 'Gene Editing Therapy Shows Promise in Clinical Trials for Previously Untreatable Neurological Conditions Affecting Millions', summary: 'Patients receiving the experimental treatment demonstrated significant improvement in motor function and cognitive performance over a 12-month period. The approach uses precisely targeted genetic modifications to address root causes rather than managing symptoms.' },
-    { headline: 'Ocean Exploration Mission Discovers Vast Network of Hydrothermal Vent Ecosystems Supporting Unique Life Forms Unknown to Science', summary: 'The newly mapped vent systems span hundreds of kilometers along mid-ocean ridges and host organisms adapted to extreme temperatures and chemical conditions. Researchers believe these ecosystems could provide insights into the origins of life on Earth and potential for life elsewhere.' },
-    { headline: 'Nuclear Fusion Reactor Sustains Net Energy Output for Record Duration, Advancing Path Toward Clean Unlimited Power', summary: 'The experimental reactor maintained stable plasma conditions producing more energy than consumed for a continuous period previously thought impossible. Engineering challenges remain before commercial deployment, but the achievement represents a critical step toward fusion as a viable energy source.' },
-    { headline: 'Ancient DNA Analysis Rewrites Human Migration Timeline, Revealing Previously Unknown Population Movements Across Continents', summary: 'Genetic evidence from 200 ancient specimens shows complex patterns of interbreeding and migration that contradict simpler models of human dispersal. The findings have profound implications for understanding how modern populations acquired genetic adaptations to different environments.' },
-    { headline: 'Breakthrough in Room-Temperature Superconductor Research Could Transform Power Grids, Transportation, and Computing Infrastructure', summary: 'The material exhibits zero electrical resistance under conditions achievable with existing technology, opening possibilities for lossless power transmission and ultra-efficient electronics. Independent laboratories are working to replicate the results before the scientific community can confirm the discovery.' },
+    'https://rss.nytimes.com/services/xml/rss/nyt/Science.xml',
+    'https://www.wired.com/feed/category/science/latest/rss'
   ],
   health: [
-    { headline: 'Global Health Agencies Report Significant Progress in Pandemic Preparedness as New Surveillance Systems Enable Early Warning Detection', summary: 'Advanced genomic sequencing networks deployed across 150 countries can now identify novel pathogens within days of emergence. The enhanced monitoring infrastructure represents a major investment in global health security following lessons learned from recent outbreaks.' },
-    { headline: 'Revolutionary Immunotherapy Approach Shows Exceptional Results in Treating Aggressive Cancers That Previously Had Limited Options', summary: 'The treatment reprograms patients\' own immune cells to recognize and destroy tumor cells with remarkable precision, achieving remission in a majority of participants across multiple cancer types. Side effects are significantly milder than conventional chemotherapy.' },
-    { headline: 'Mental Health Services Expansion Initiative Receives Record Funding as Governments Recognize Growing Crisis Among All Age Groups', summary: 'New programs will fund community mental health centers, telehealth platforms, and school-based counseling services. The investment reflects a paradigm shift in viewing mental health care as essential infrastructure rather than an optional supplement to physical medicine.' },
-    { headline: 'Personalized Medicine Breakthrough Enables Cancer Treatment Tailored to Individual Genetic Profiles, Dramatically Improving Outcomes', summary: 'Genomic profiling of tumors allows oncologists to select therapies most likely to succeed for each patient, moving away from one-size-fits-all approaches. Early data shows response rates nearly double compared to standard treatment protocols.' },
-    { headline: 'Wearable Health Monitoring Devices Gain Medical Grade Accuracy as Technology Enables Continuous Disease Prevention Tracking', summary: 'New generations of consumer wearables can detect early signs of cardiac arrhythmias, respiratory conditions, and metabolic disturbances with clinical-level precision. Regulatory bodies are developing frameworks to integrate this data into standard healthcare workflows.' },
-    { headline: 'Antibiotic Resistance Crisis Prompts Development of Novel Antimicrobial Classes Using Artificial Intelligence Drug Discovery Platforms', summary: 'AI systems have identified promising new compounds that kill drug-resistant bacteria through mechanisms unlike any existing antibiotic class. Clinical trials are planned within two years as the world races to address the growing threat of untreatable infections.' },
+    'https://rss.nytimes.com/services/xml/rss/nyt/Health.xml'
   ],
   entertainment: [
-    { headline: 'Independent Film Breakout Sensation Dominates Global Box Office, Proving Audiences Crave Original Storytelling Over Franchise Sequels', summary: 'The low-budget production has earned over $400 million worldwide through strong word-of-mouth and critical acclaim. Industry executives are reassessing their reliance on established franchises after the film demonstrated that fresh narratives can achieve massive commercial success.' },
-    { headline: 'Streaming Platforms Enter New Competitive Phase as Services Differentiate Through Exclusive Creator Partnerships and Interactive Content', summary: 'Major platforms are investing in long-term relationships with acclaimed filmmakers and experimenting with branching narrative formats that let audiences influence story outcomes. The evolution signals maturation beyond the subscriber growth-at-all-costs strategy of earlier years.' },
-    { headline: 'Music Industry Experiences Global Renaissance as Live Concert Attendance and Album Sales Reach Highest Levels in Thirty Years', summary: 'A diverse roster of artists across genres is driving unprecedented demand for both recorded music and live performances. The resurgence is attributed to a new generation of musicians blending cultural influences and leveraging direct-to-fan digital platforms.' },
-    { headline: 'Video Game Industry Surpasses Film and Music Combined as Interactive Entertainment Becomes Dominant Form of Global Media Consumption', summary: 'Revenue from gaming now exceeds the combined totals of traditional entertainment sectors, driven by mobile gaming in emerging markets and premium experiences on consoles and PC. Cultural influence extends beyond gaming into fashion, music, and social interaction.' },
-    { headline: 'Award-Winning Television Series Redefines Storytelling Boundaries with Multi-Narrative Structure Spanning Multiple Time Periods', summary: 'The ambitious production weaves together storylines across different eras to explore enduring themes of human resilience and connection. Critics have hailed it as a landmark achievement in serialized storytelling that pushes the creative limits of the medium.' },
-    { headline: 'Virtual Reality Concert Experiences Attract Millions of Viewers as Artists Embrace Immersive Digital Performance Formats', summary: 'Musicians are creating fully immersive concert environments where remote audiences can interact with performances in three-dimensional virtual spaces. The technology enables artists to reach global fans while experimenting with visual and auditory experiences impossible in physical venues.' },
+    'https://www.eonline.com/rss/news.xml',
+    'https://www.hollywoodreporter.com/feed/'
+  ]
+}
+
+// ─── Fallback Media Images ──────────────────────────────────────────
+const FALLBACK_IMAGES = {
+  all: [
+    'https://images.unsplash.com/photo-1504711434969-e33886168f5c?q=80&w=600&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1495020689067-958852a6565d?q=80&w=600&auto=format&fit=crop'
   ],
+  world: [
+    'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=600&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?q=80&w=600&auto=format&fit=crop'
+  ],
+  politics: [
+    'https://images.unsplash.com/photo-1541872703-74c5e44368f9?q=80&w=600&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?q=80&w=600&auto=format&fit=crop'
+  ],
+  business: [
+    'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=600&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1559526324-4b87b5e36e44?q=80&w=600&auto=format&fit=crop'
+  ],
+  tech: [
+    'https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=600&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?q=80&w=600&auto=format&fit=crop'
+  ],
+  sports: [
+    'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?q=80&w=600&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?q=80&w=600&auto=format&fit=crop'
+  ],
+  science: [
+    'https://images.unsplash.com/photo-1532094349884-543bc11b234d?q=80&w=600&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1507668077129-56e32842fceb?q=80&w=600&auto=format&fit=crop'
+  ],
+  health: [
+    'https://images.unsplash.com/photo-1505751172876-fa1923c5c528?q=80&w=600&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1498837167922-ddd27525d352?q=80&w=600&auto=format&fit=crop'
+  ],
+  entertainment: [
+    'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?q=80&w=600&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=600&auto=format&fit=crop'
+  ]
+}
+
+const FALLBACK_STORIES = {
+  world: [
+    { title: 'Global Climate Summit Reaches Accord on Carbon Targets', desc: 'Delegates from 190 nations have finalized a landmark agreement committing to binding emissions thresholds by 2035, supported by a green energy fund.', source: 'Reuters' },
+    { title: 'New Economic Trade Corridor Announced by G20 Leaders', desc: 'A major infrastructure project linking ports across Asia and Europe is set to start construction next year, aiming to cut shipping times by 30%.', source: 'Associated Press' }
+  ],
+  politics: [
+    { title: 'Bipartisan Tech Privacy Reform Bill Passes Key Senate Vote', desc: 'The draft legislation introduces strict guidelines for data privacy and algorithmic transparency, gaining unexpected support across political lines.', source: 'The Hill' },
+    { title: 'Supreme Court Issues Key Decision on Digital Encryption', desc: 'In a 7-2 ruling, the high court established that government requests for device backdoors must meet strict security and warrant thresholds.', source: 'CNN' }
+  ],
+  business: [
+    { title: 'Federal Reserve Signals Interest Rate Pause After Growth Report', desc: 'The central bank indicated stable rates for the upcoming quarter, citing controlled inflation and steady employment gains.', source: 'Bloomberg' },
+    { title: 'Green Energy Startup Achieves Unicorn Status with New Funding', desc: 'A firm specializing in long-duration flow batteries has raised $300 million to expand its manufacturing facility in Ohio.', source: 'Wall Street Journal' }
+  ],
+  tech: [
+    { title: 'AI Research Lab Reveals Model Capable of Advanced Logic', desc: 'The new reasoning engine demonstrates capability in solving complex scientific proofs and helping biologists with molecular simulation.', source: 'TechCrunch' },
+    { title: 'Solid-State EV Battery Reaches Crucial Testing Phase', desc: 'Engineers report that the new battery tech maintains 90% capacity after 100,000 miles of simulated driving, charging in 12 minutes.', source: 'The Verge' }
+  ],
+  sports: [
+    { title: 'Underdog Team Clinches Dramatic Football League Title', desc: 'In one of the greatest upsets in modern sports history, the last-seeded team won the championship final with a last-minute goal.', source: 'BBC Sport' },
+    { title: 'New Tracking Technology Approved for Major League Games', desc: 'Player wearables monitoring biometric fatigue and impact levels will be standard equipment starting next season.', source: 'ESPN' }
+  ],
+  science: [
+    { title: 'Deep Space Observatory Captures Image of Early Solar System', desc: 'Astronomers released images showing dust accretion rings around a star located 400 light years away, providing clues to Earth\'s origins.', source: 'Scientific American' },
+    { title: 'Nuclear Fusion Experiment Achieves Sustained Net Energy Gain', desc: 'The ignition chamber produced double the input power for a duration of 3 minutes, breaking previous records for plasma containment.', source: 'Wired' }
+  ],
+  health: [
+    { title: 'FDA Approves Breakthrough Immunotherapy for Lung Cancer', desc: 'The personalized vaccine program trains the patient\'s immune cells to attack cancerous growths, showing high efficacy in trials.', source: 'NBC News' },
+    { title: 'National Study Highlights Benefits of Regular Micro-Workouts', desc: 'Five minutes of intense daily activity was found to improve cardiovascular markers by up to 20%, showing comparable benefits to longer routines.', source: 'Healthline' }
+  ],
+  entertainment: [
+    { title: 'Independent Film Wins Top Honors at International Festival', desc: 'A low-budget drama shot entirely on location won three main awards, with critics praising the lead performance and score.', source: 'The Hollywood Reporter' },
+    { title: 'Virtual Reality Concert Platform Attracts Millions of Fans', desc: 'A major musical artist hosted an interactive live show inside a digital arena, paving the way for next-gen performance formats.', source: 'Variety' }
+  ]
+}
+
+// ─── Helpers ────────────────────────────────────────────────────────
+const getCountryFeedUrl = (countryId) => {
+  const countryNameMap = {
+    us: 'United States',
+    uk: 'United Kingdom',
+    eu: 'Europe',
+    in: 'India',
+    cn: 'China',
+    ru: 'Russia',
+    me: 'Middle East',
+    africa: 'Africa',
+    sa: 'South America',
+    jp: 'Japan',
+    kr: 'South Korea',
+    au: 'Australia'
+  }
+  const name = countryNameMap[countryId] || 'World'
+  return `https://news.google.com/rss/search?q=location:${encodeURIComponent(name)}&hl=en-US&gl=US&ceid=US:en`
+}
+
+const getFallbackImage = (category) => {
+  const images = FALLBACK_IMAGES[category] || FALLBACK_IMAGES['all']
+  return images[Math.floor(Math.random() * images.length)]
+}
+
+const decodeHTMLEntities = (text) => {
+  const textArea = document.createElement('textarea')
+  textArea.innerHTML = text
+  return textArea.value
+}
+
+const formatTimeAgo = (date) => {
+  const now = new Date()
+  const diffMs = now - date
+  const diffMins = Math.floor(diffMs / 60000)
+  if (diffMins < 1) return 'Just now'
+  if (diffMins < 60) return `${diffMins}m ago`
+  const diffHours = Math.floor(diffMins / 60)
+  if (diffHours < 24) return `${diffHours}h ago`
+  const diffDays = Math.floor(diffHours / 24)
+  return `${diffDays}d ago`
+}
+
+// Web Audio API synth beep sound effect
+const playSynthBeep = () => {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)()
+    const osc = ctx.createOscillator()
+    const gain = ctx.createGain()
+    osc.type = 'sine'
+    osc.frequency.setValueAtTime(587.33, ctx.currentTime) // D5
+    osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.12) // A5
+    gain.gain.setValueAtTime(0.12, ctx.currentTime)
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.12)
+    osc.connect(gain)
+    gain.connect(ctx.destination)
+    osc.start()
+    osc.stop(ctx.currentTime + 0.12)
+  } catch (e) {
+    console.warn('Web Audio Context not allowed or initialized yet.')
+  }
 }
 
 // ─── Share Component ────────────────────────────────────────────────
-function ShareButton({ headline, summary }) {
+function ShareButton({ story, onShare }) {
   const [copied, setCopied] = useState(false)
 
-  const handleShare = async () => {
-    const text = `${headline}\n\n${summary}`
+  const handleShare = async (e) => {
+    e.stopPropagation()
+    const text = `🔥 ${story.headline} (via ${story.source})\n\n${story.summary}\n\nRead more: ${story.link}`
     if (navigator.share) {
-      try { await navigator.share({ title: headline, text }) } catch {}
+      try {
+        await navigator.share({ title: story.headline, text, url: story.link })
+        if (onShare) onShare()
+      } catch {}
     } else {
       try {
         await navigator.clipboard.writeText(text)
         setCopied(true)
+        if (onShare) onShare()
         setTimeout(() => setCopied(false), 2000)
       } catch {}
     }
   }
 
   return (
-    <button onClick={handleShare} className="flex items-center gap-1.5 text-xs font-medium text-gray-400 hover:text-blue-600 transition-colors">
-      {copied ? (
-        <>
-          <svg className="w-3.5 h-3.5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-          <span className="text-green-500">Copied!</span>
-        </>
-      ) : (
-        <>
-          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
-          <span>Share</span>
-        </>
+    <button
+      onClick={handleShare}
+      className="w-12 h-12 bg-white/10 hover:bg-white/20 active:scale-90 rounded-full flex flex-col items-center justify-center transition-all border border-white/20 relative"
+      title="Share Story"
+    >
+      <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+      </svg>
+      {copied && (
+        <span className="absolute -top-8 px-2 py-1 bg-violet-600 border border-violet-500 text-[10px] font-bold text-white rounded shadow-md animate-bounce">
+          Copied!
+        </span>
       )}
     </button>
   )
 }
 
-// ─── Impact Gradients (each category gets a unique dark gradient) ──
-const IMPACT_GRADIENTS = {
-  world: 'from-slate-900 via-blue-950 to-indigo-950',
-  politics: 'from-red-950 via-rose-950 to-pink-950',
-  business: 'from-emerald-950 via-teal-950 to-cyan-950',
-  tech: 'from-violet-950 via-purple-950 to-fuchsia-950',
-  sports: 'from-orange-950 via-amber-950 to-yellow-950',
-  science: 'from-teal-950 via-green-950 to-lime-950',
-  health: 'from-pink-950 via-rose-950 to-red-950',
-  entertainment: 'from-fuchsia-950 via-purple-950 to-indigo-950',
-}
-
-const IMPACT_ACCENT = {
-  world: 'text-blue-300 border-blue-400/30 bg-blue-400/10',
-  politics: 'text-red-300 border-red-400/30 bg-red-400/10',
-  business: 'text-emerald-300 border-emerald-400/30 bg-emerald-400/10',
-  tech: 'text-violet-300 border-violet-400/30 bg-violet-400/10',
-  sports: 'text-orange-300 border-orange-400/30 bg-orange-400/10',
-  science: 'text-teal-300 border-teal-400/30 bg-teal-400/10',
-  health: 'text-pink-300 border-pink-400/30 bg-pink-400/10',
-  entertainment: 'text-fuchsia-300 border-fuchsia-400/30 bg-fuchsia-400/10',
-}
-
-// ─── News Card (Dark Impact Theme) ──────────────────────────────────
-function NewsCard({ story }) {
+// ─── News Card (TikTok Immersive View) ──────────────────────────────
+function NewsCard({ story, isActive, onAction }) {
+  const [isLiked, setIsLiked] = useState(false)
+  const [likeCount, setLikeCount] = useState(story.likes)
+  const [isSpeaking, setIsSpeaking] = useState(false)
+  const [hearts, setHearts] = useState([])
+  const lastClick = useRef(0)
   const catInfo = CATEGORIES.find(c => c.id === story.category) || CATEGORIES[0]
-  const gradient = IMPACT_GRADIENTS[story.category] || 'from-gray-900 to-slate-900'
-  const accent = IMPACT_ACCENT[story.category] || ''
+
+  // Stop speech if card goes out of focus/active state
+  useEffect(() => {
+    if (!isActive && isSpeaking) {
+      window.speechSynthesis.cancel()
+      setIsSpeaking(false)
+    }
+  }, [isActive, isSpeaking])
+
+  useEffect(() => {
+    return () => {
+      if (isSpeaking) {
+        window.speechSynthesis.cancel()
+      }
+    }
+  }, [isSpeaking])
+
+  const handleDoubleTap = (e) => {
+    // Determine click position relative to target container
+    const rect = e.currentTarget.getBoundingClientRect()
+    const x = e.clientX - rect.left
+    const y = e.clientY - rect.top
+    
+    // Add double-tap heart pop particle
+    const newHeart = { id: Date.now(), x, y }
+    setHearts(prev => [...prev, newHeart])
+    
+    // Play subtle synth bubbly pop
+    playSynthBeep()
+    
+    if (!isLiked) {
+      setIsLiked(true)
+      setLikeCount(prev => prev + 1)
+      if (onAction) onAction('like')
+    }
+    
+    // Clear particle after animation ends
+    setTimeout(() => {
+      setHearts(prev => prev.filter(h => h.id !== newHeart.id))
+    }, 800)
+  }
+
+  const handleCardClick = (e) => {
+    // Avoid triggering when buttons, anchor or sub-elements are clicked
+    if (e.target.closest('button') || e.target.closest('a') || e.target.closest('span.tag-bubble')) return
+    
+    const now = Date.now()
+    if (now - lastClick.current < 280) {
+      handleDoubleTap(e)
+    }
+    lastClick.current = now
+  }
+
+  const handleLikeClick = (e) => {
+    e.stopPropagation()
+    playSynthBeep()
+    if (isLiked) {
+      setIsLiked(false)
+      setLikeCount(prev => prev - 1)
+    } else {
+      setIsLiked(true)
+      setLikeCount(prev => prev + 1)
+      if (onAction) onAction('like')
+    }
+  }
+
+  const handleTTSClick = (e) => {
+    e.stopPropagation()
+    if (isSpeaking) {
+      window.speechSynthesis.cancel()
+      setIsSpeaking(false)
+    } else {
+      window.speechSynthesis.cancel()
+      const text = `${story.headline}. Summary: ${story.summary}`
+      const utterance = new SpeechSynthesisUtterance(text)
+      
+      utterance.onend = () => setIsSpeaking(false)
+      utterance.onerror = () => setIsSpeaking(false)
+      
+      const voices = window.speechSynthesis.getVoices()
+      // Prefer natural or high-quality english voice
+      const voice = voices.find(v => v.lang.startsWith('en-') && (v.name.includes('Google') || v.name.includes('Natural'))) 
+        || voices.find(v => v.lang.startsWith('en-')) 
+        || voices[0]
+        
+      if (voice) {
+        utterance.voice = voice
+      }
+      
+      setIsSpeaking(true)
+      window.speechSynthesis.speak(utterance)
+      if (onAction) onAction('tts')
+    }
+  }
 
   return (
-    <article className={`relative bg-gradient-to-br ${gradient} h-full w-full flex flex-col justify-between p-6 rounded-2xl border border-white/10 overflow-hidden shadow-2xl group`}>
-      {/* Ambient glow effects */}
-      <div className="absolute inset-0 opacity-30 pointer-events-none">
-        <div className="absolute top-[-20%] right-[-10%] w-[80%] h-[75%] bg-white/10 rounded-full blur-[120px]" />
-        <div className="absolute bottom-[-10%] left-[-20%] w-[70%] h-[60%] bg-white/5 rounded-full blur-[100px]" />
+    <article
+      onClick={handleCardClick}
+      className="relative w-full h-full bg-zinc-950 flex flex-col justify-between overflow-hidden shadow-2xl select-text transition-all duration-300 group rounded-3xl border border-white/10"
+    >
+      {/* Background Immersive Media Image */}
+      <div className="absolute inset-0 z-0 pointer-events-none">
+        <img
+          src={story.imageUrl}
+          alt={story.headline}
+          className="w-full h-full object-cover opacity-60 transition-transform duration-1000 scale-[1.03] group-hover:scale-105"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
+        <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/80 to-transparent" />
       </div>
 
-      {/* Top Header metadata */}
-      <div className="relative z-10 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <span className="text-2xl drop-shadow-lg">{catInfo.icon}</span>
-          <div className="h-4 w-px bg-white/20" />
-          <span className="font-bold text-base text-white/95 tracking-wide uppercase">{story.source}</span>
+      {/* Floating Hearts Pop Overlay */}
+      {hearts.map(h => (
+        <div
+          key={h.id}
+          className="absolute pointer-events-none text-red-500 animate-heart-pop z-50"
+          style={{ left: h.x - 40, top: h.y - 40 }}
+        >
+          <svg className="w-20 h-20 filter drop-shadow-[0_0_15px_rgba(239,68,68,0.85)]" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+          </svg>
         </div>
-        <ShareButton headline={story.headline} summary={story.summary} />
-      </div>
+      ))}
 
-      {/* Main Content Area (Headline + Summary) */}
-      <div className="relative z-10 flex-1 flex flex-col justify-center my-4 space-y-4 max-w-xl mx-auto w-full">
-        {/* Dynamic decorative category label */}
-        <span className={`self-start text-[10px] uppercase font-bold tracking-widest px-2.5 py-1 rounded border border-white/10 bg-white/5 text-white/60`}>
+      {/* Top Details */}
+      <div className="relative z-10 p-5 flex items-center justify-between pointer-events-none">
+        <div className="flex items-center gap-2.5 bg-black/45 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-white/10">
+          <span className="text-xl">{catInfo.icon}</span>
+          <span className="font-extrabold text-xs text-white uppercase tracking-wider flex items-center gap-1">
+            {story.source}
+            <svg className="w-3.5 h-3.5 text-blue-400 fill-current" viewBox="0 0 20 20">
+              <path d="M6.267 3.455a.75.75 0 00-.75-.75H3.5a1 1 0 00-1 1v2.017c0 .185.068.363.19.5l7.983 7.983a1 1 0 001.414 0l2.017-2.017a1 1 0 000-1.414L6.12 3.58a.75.75 0 00-.147-.125z" />
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+            </svg>
+          </span>
+        </div>
+        <span className="text-[11px] font-bold text-gray-300 uppercase tracking-widest bg-black/45 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-white/10">
           {catInfo.label}
         </span>
-        
-        <h2 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-white leading-tight drop-shadow-lg select-text">
-          {story.headline}
-        </h2>
-        
-        <p className="text-sm sm:text-base text-white/80 leading-relaxed drop-shadow-md select-text line-clamp-6">
-          {story.summary}
-        </p>
-
-        {/* Tags */}
-        <div className="flex flex-wrap gap-2 pt-2">
-          {story.tags.map(tag => (
-            <span key={tag} className={`text-[11px] px-3 py-1 rounded-full border font-semibold backdrop-blur-sm ${accent}`}>
-              #{tag.replace(/\s+/g, '')}
-            </span>
-          ))}
-        </div>
       </div>
 
-      {/* Bottom CTA / Action */}
-      <div className="relative z-10 flex items-center justify-between pt-4 border-t border-white/10">
-        <a 
-          href={story.link} 
-          target="_blank" 
-          rel="noopener noreferrer" 
-          className="inline-flex items-center gap-2 text-sm font-bold text-white bg-gradient-to-r from-violet-600/80 to-indigo-600/80 hover:from-violet-500/90 hover:to-indigo-500/90 active:scale-[0.97] transition-all backdrop-blur-md border border-white/20 px-5 py-2.5 rounded-full shadow-lg shadow-purple-900/30"
-        >
-          <span>Read Full Story</span>
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-          </svg>
-        </a>
-        <span className="text-xs text-white/40 font-semibold">{story.time}</span>
+      {/* Main Body (Left Content Overlay + Right Action Sidebar) */}
+      <div className="relative z-10 flex items-end justify-between px-5 pb-6 pt-20 mt-auto w-full gap-4">
+        {/* Left text container */}
+        <div className="flex-1 flex flex-col text-left space-y-3.5 max-w-[80%]">
+          {/* TTS Visualizer Waves */}
+          {isSpeaking && (
+            <div className="flex items-center gap-1 bg-violet-500/20 px-3 py-1.5 rounded-full border border-violet-500/30 w-fit">
+              <span className="w-1 h-3 bg-violet-400 rounded-full animate-bounce" style={{ animationDelay: '0.0s' }} />
+              <span className="w-1 h-4.5 bg-violet-400 rounded-full animate-bounce" style={{ animationDelay: '0.15s' }} />
+              <span className="w-1 h-3.5 bg-violet-400 rounded-full animate-bounce" style={{ animationDelay: '0.3s' }} />
+              <span className="text-[10px] font-bold text-violet-300 ml-1.5 uppercase tracking-wider">Reading Now</span>
+            </div>
+          )}
+
+          <h2 className="text-base sm:text-lg md:text-xl font-extrabold text-white leading-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] line-clamp-3 select-text">
+            {story.headline}
+          </h2>
+
+          <p className="text-xs sm:text-sm text-gray-200/95 font-medium leading-relaxed drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)] line-clamp-4 select-text">
+            {story.summary}
+          </p>
+
+          {/* Tag pills */}
+          <div className="flex flex-wrap gap-1.5">
+            {story.tags.map(tag => (
+              <span key={tag} className="tag-bubble text-[9px] font-bold uppercase px-2.5 py-1 rounded bg-white/10 backdrop-blur-md text-white border border-white/10">
+                #{tag}
+              </span>
+            ))}
+          </div>
+
+          {/* Legit external CTA link */}
+          <a
+            href={story.link}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => onAction && onAction('click')}
+            className="inline-flex items-center gap-1.5 w-fit mt-1 text-[11px] font-extrabold text-white bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 active:scale-95 transition-all px-4 py-2.5 rounded-full shadow-lg shadow-purple-950/40 border border-white/20"
+          >
+            <span>Read Original Article</span>
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+            </svg>
+          </a>
+        </div>
+
+        {/* Right Sidebar actions */}
+        <div className="flex flex-col items-center space-y-4 shrink-0 pb-1.5">
+          {/* Publisher Initial Avatar */}
+          <div className="w-12 h-12 rounded-full border-2 border-white bg-gradient-to-br from-violet-500 via-indigo-600 to-purple-800 flex items-center justify-center shadow-lg mb-1 relative group">
+            <span className="text-white font-extrabold text-base uppercase">{story.source.charAt(0)}</span>
+            <span className="absolute -bottom-1 right-0 w-4.5 h-4.5 bg-blue-500 rounded-full flex items-center justify-center border border-white">
+              <svg className="w-3 h-3 text-white fill-current" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+              </svg>
+            </span>
+          </div>
+
+          {/* Like Button */}
+          <button
+            onClick={handleLikeClick}
+            className={`w-12 h-12 rounded-full flex flex-col items-center justify-center border active:scale-75 transition-all shadow-md ${
+              isLiked 
+                ? 'bg-red-500 border-red-400 text-white animate-pulse' 
+                : 'bg-black/45 border-white/10 hover:bg-black/60 text-white'
+            }`}
+          >
+            <svg className="w-5.5 h-5.5" fill={isLiked ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={2.2} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+            </svg>
+          </button>
+          <span className="text-[10px] font-extrabold text-gray-200 tracking-wider shadow-sm select-none">
+            {likeCount}
+          </span>
+
+          {/* Text-to-Speech Voice Button */}
+          <button
+            onClick={handleTTSClick}
+            className={`w-12 h-12 rounded-full flex flex-col items-center justify-center border active:scale-90 transition-all shadow-md ${
+              isSpeaking 
+                ? 'bg-violet-600 border-violet-500 text-white' 
+                : 'bg-black/45 border-white/10 hover:bg-black/60 text-white'
+            }`}
+            title={isSpeaking ? 'Mute Speech' : 'Listen to Article'}
+          >
+            {isSpeaking ? (
+              <svg className="w-5.5 h-5.5 text-white animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M15.536 8.464a5 5 0 010 7.072M18.364 5.636a9 9 0 010 12.728M12 18.75V5.25L7.75 9.5H4.5v5h3.25L12 18.75z" />
+              </svg>
+            ) : (
+              <svg className="w-5.5 h-5.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M15.536 8.464a5 5 0 010 7.072M12 18.75V5.25L7.75 9.5H4.5v5h3.25L12 18.75z" />
+              </svg>
+            )}
+          </button>
+          <span className="text-[10px] font-extrabold text-gray-200 tracking-wider shadow-sm select-none">
+            Listen
+          </span>
+
+          {/* Share Button */}
+          <ShareButton story={story} onShare={() => onAction && onAction('share')} />
+          <span className="text-[10px] font-extrabold text-gray-200 tracking-wider shadow-sm select-none">
+            {story.shares}
+          </span>
+
+          <span className="text-[9px] font-bold text-gray-400/90 tracking-tighter mt-1">{story.time}</span>
+        </div>
       </div>
     </article>
   )
 }
 
-// ─── Skeleton Card (Dark) ──────────────────────────────────────────
+// ─── Skeleton Card (Dark Pulse) ────────────────────────────────────
 function SkeletonCard() {
   return (
-    <div className="relative bg-gradient-to-br from-slate-900 to-gray-950 h-full w-full flex flex-col justify-between p-6 rounded-2xl overflow-hidden shadow-lg animate-pulse border border-white/10">
-      <div className="absolute inset-0 opacity-20"><div className="absolute top-[-40%] right-[-20%] w-[60%] h-[60%] bg-white rounded-full blur-[120px]" /></div>
-      <div className="relative z-10 flex-1 flex flex-col justify-center my-4 space-y-4 max-w-xl mx-auto w-full">
-        <div className="flex items-center gap-3 mb-4"><div className="w-7 h-7 bg-white/10 rounded-lg" /><div className="h-5 w-px bg-white/20" /><div className="h-4 w-20 bg-white/10 rounded" /></div>
-        <div className="h-8 w-full bg-white/10 rounded mb-3" />
-        <div className="h-8 w-3/4 bg-white/10 rounded mb-4" />
-        <div className="space-y-2 mb-5"><div className="h-4 w-full bg-white/5 rounded" /><div className="h-4 w-5/6 bg-white/5 rounded" /></div>
-        <div className="flex gap-2"><div className="h-6 w-16 bg-white/10 rounded-full" /><div className="h-6 w-20 bg-white/10 rounded-full" /></div>
+    <div className="relative w-full h-full bg-zinc-950 flex flex-col justify-between p-6 rounded-3xl border border-white/10 overflow-hidden shadow-2xl animate-pulse">
+      <div className="absolute inset-0 opacity-15"><div className="absolute top-[-20%] right-[-20%] w-[60%] h-[60%] bg-violet-500 rounded-full blur-[100px]" /></div>
+      <div className="flex justify-between items-center z-10 mb-4">
+        <div className="w-28 h-8 bg-white/10 rounded-full border border-white/5" />
+        <div className="w-20 h-8 bg-white/10 rounded-full border border-white/5" />
+      </div>
+      <div className="z-10 mt-auto space-y-4 max-w-[80%]">
+        <div className="h-6 w-full bg-white/15 rounded-md" />
+        <div className="h-6 w-3/4 bg-white/15 rounded-md" />
+        <div className="space-y-2 pt-2">
+          <div className="h-3 w-full bg-white/10 rounded" />
+          <div className="h-3 w-5/6 bg-white/10 rounded" />
+        </div>
+        <div className="flex gap-2 pt-2">
+          <div className="h-5 w-14 bg-white/10 rounded-full" />
+          <div className="h-5 w-16 bg-white/10 rounded-full" />
+        </div>
+        <div className="h-9 w-32 bg-white/15 rounded-full mt-2" />
       </div>
     </div>
   )
 }
 
-// ─── Explore Page (Dark Theme) ──────────────────────────────────────
+// ─── Explore Page (Topics + Countries selector) ─────────────────────
 function ExplorePage({ onSelectCategory, selectedCategory }) {
   return (
-    <div className="max-w-2xl mx-auto px-4 py-10">
+    <div className="max-w-xl mx-auto px-4 py-8 select-none">
       {/* Header */}
-      <div className="text-center mb-12">
-        <h1 className="text-3xl font-extrabold text-white mb-2">Explore Topics</h1>
-        <p className="text-gray-400">Tap a category or country to filter your feed — stories refresh instantly</p>
+      <div className="text-center mb-8">
+        <h1 className="text-2xl font-extrabold text-white mb-1.5 bg-gradient-to-r from-violet-400 via-purple-300 to-indigo-300 bg-clip-text text-transparent">Explore Feeds</h1>
+        <p className="text-xs text-gray-400">Select topics or countries to personalize your feed. Swipe to read.</p>
       </div>
 
       {/* Categories Grid */}
       <div className="mb-8">
-        <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z" /></svg>
-          Topics
+        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4.5 flex items-center gap-2 border-b border-white/5 pb-2">
+          <svg className="w-4 h-4 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z" />
+          </svg>
+          Featured Topics
         </h3>
-        <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 mb-8">
+        <div className="grid grid-cols-3 gap-3">
           {CATEGORIES.map(cat => (
             <button
               key={cat.id}
               onClick={() => onSelectCategory(cat.id)}
-              className={`relative p-4 rounded-2xl border transition-all duration-300 text-center group ${
+              className={`relative p-3.5 rounded-2xl border transition-all duration-300 text-center flex flex-col items-center justify-center group active:scale-95 ${
                 selectedCategory === cat.id
-                  ? `border-transparent bg-gradient-to-br ${cat.color} text-white shadow-xl scale-[1.05] ring-2 ring-white/20`
-                  : 'border-gray-700/50 bg-gray-800/50 hover:bg-gray-700/60 hover:border-gray-600'
+                  ? `border-transparent bg-gradient-to-br ${cat.color} text-white shadow-lg ring-1 ring-white/20`
+                  : 'border-white/5 bg-zinc-900/50 hover:bg-zinc-800/60 hover:border-white/10 text-gray-300'
               }`}
             >
-              <span className="text-3xl block mb-2">{cat.icon}</span>
-              <span className={`font-bold text-xs ${selectedCategory === cat.id ? 'text-white' : 'text-gray-300'}`}>{cat.label}</span>
+              <span className="text-2xl mb-1.5 drop-shadow-md group-hover:scale-110 transition-transform">{cat.icon}</span>
+              <span className="font-extrabold text-[11px] tracking-wide uppercase">{cat.label}</span>
               {selectedCategory === cat.id && (
-                <div className="absolute top-2 right-2">
-                  <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
+                <div className="absolute top-1.5 right-1.5">
+                  <svg className="w-3.5 h-3.5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
                 </div>
               )}
             </button>
           ))}
         </div>
-
-        {/* Tags Section */}
-        {selectedCategory !== 'all' && (
-          <div className="bg-gray-800/60 rounded-2xl border border-gray-700/50 p-6 backdrop-blur-sm mb-8">
-            <h3 className="font-bold text-white mb-4 flex items-center gap-2">
-              <span>{CATEGORIES.find(c => c.id === selectedCategory)?.icon}</span>
-              {CATEGORIES.find(c => c.id === selectedCategory)?.label} Tags
-            </h3>
-            <div className="flex flex-wrap gap-2">
-              {(TAGS_BY_CATEGORY[selectedCategory] || []).map(tag => (
-                <span key={tag} className={`text-xs px-4 py-2 rounded-full font-medium ${CATEGORIES.find(c => c.id === selectedCategory)?.bg}`}>
-                  {tag}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Countries Section */}
-      <div className="mb-8">
-        <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-          Countries & Regions
+      <div className="mb-6">
+        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4.5 flex items-center gap-2 border-b border-white/5 pb-2">
+          <svg className="w-4 h-4 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          Regions & Countries
         </h3>
-        <div className="grid grid-cols-4 sm:grid-cols-6 gap-3">
+        <div className="grid grid-cols-4 gap-2.5">
           {COUNTRIES.map(country => (
             <button
               key={country.id}
               onClick={() => onSelectCategory(`country-${country.id}`)}
-              className={`relative p-3 rounded-xl border transition-all duration-300 text-center group ${
+              className={`relative p-2.5 rounded-xl border transition-all duration-300 text-center flex flex-col items-center justify-center group active:scale-95 ${
                 selectedCategory === `country-${country.id}`
-                  ? 'border-transparent bg-gradient-to-br from-blue-600 to-indigo-700 text-white shadow-lg scale-[1.05] ring-2 ring-white/20'
-                  : 'border-gray-700/50 bg-gray-800/50 hover:bg-gray-700/60 hover:border-gray-600'
+                  ? 'border-transparent bg-gradient-to-br from-indigo-600 to-violet-700 text-white shadow-lg ring-1 ring-white/20'
+                  : 'border-white/5 bg-zinc-900/50 hover:bg-zinc-800/60 hover:border-white/10 text-gray-300'
               }`}
             >
-              <span className="text-2xl block mb-1">{country.flag}</span>
-              <span className={`font-bold text-[10px] ${selectedCategory === `country-${country.id}` ? 'text-white' : 'text-gray-300'}`}>{country.label}</span>
+              <span className="text-2xl mb-1 drop-shadow-md group-hover:scale-110 transition-transform">{country.flag}</span>
+              <span className="font-extrabold text-[9px] tracking-wider uppercase">{country.label}</span>
               {selectedCategory === `country-${country.id}` && (
                 <div className="absolute top-1 right-1">
-                  <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
+                  <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
                 </div>
               )}
             </button>
           ))}
         </div>
-
-        {/* Country Tags */}
-        {selectedCategory.startsWith('country-') && (
-          <div className="bg-gray-800/60 rounded-2xl border border-gray-700/50 p-6 backdrop-blur-sm mt-4">
-            <h3 className="font-bold text-white mb-3 flex items-center gap-2">
-              <span>{COUNTRIES.find(c => c.id === selectedCategory.replace('country-', ''))?.flag}</span>
-              {COUNTRIES.find(c => c.id === selectedCategory.replace('country-', ''))?.label} News
-            </h3>
-            <p className="text-sm text-gray-400">Stories from {COUNTRIES.find(c => c.id === selectedCategory.replace('country-', ''))?.label} covering politics, business, technology, and more.</p>
-          </div>
-        )}
-      </div>
-
-      {/* Selected indicator */}
-      <div className="p-4 bg-purple-500/10 rounded-xl border border-purple-500/20">
-        <p className="text-sm text-purple-300 font-medium flex items-center gap-2">
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-          {selectedCategory === 'all' ? 'Showing all stories across every topic and region.' : selectedCategory.startsWith('country-') ? `Filtering to ${COUNTRIES.find(c => c.id === selectedCategory.replace('country-', ''))?.label} stories. Scroll down for regional content.` : `Filtering to ${CATEGORIES.find(c => c.id === selectedCategory)?.label} stories. Scroll down for personalized content.`}
-        </p>
       </div>
     </div>
   )
 }
 
-// ─── Main App ───────────────────────────────────────────────────────
+// ─── Main App Component ─────────────────────────────────────────────
 function App() {
   const [activeTab, setActiveTab] = useState('feed') // 'feed' | 'explore'
-  const [stories, setStories] = useState([])
+  const [allStories, setAllStories] = useState([])
+  const [displayedStories, setDisplayedStories] = useState([])
   const [loading, setLoading] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
   const [page, setPage] = useState(0)
   const [selectedCategory, setSelectedCategory] = useState('all')
+  const [activeStoryId, setActiveStoryId] = useState(null)
+  
   const observerTarget = useRef(null)
-  const storyIdRef = useRef(100)
+  const feedContainerRef = useRef(null)
 
-  // Load stories on mount or category change
-  useEffect(() => {
-    loadStories(false)
+  // ─── Personalization Weights Logic ──────────────────────────────────
+  const getCategoryWeights = useCallback(() => {
+    const stored = localStorage.getItem('newspulse_category_weights')
+    if (stored) {
+      try { return JSON.parse(stored) } catch (e) {}
+    }
+    const defaultWeights = {}
+    CATEGORIES.forEach(c => { defaultWeights[c.id] = 1.0 })
+    return defaultWeights
   }, [])
 
-  const loadStories = useCallback((append = false, filter = null) => {
+  const boostCategoryWeight = useCallback((catId, amount) => {
+    if (!catId || catId === 'all') return
+    const weights = getCategoryWeights()
+    weights[catId] = (weights[catId] || 1.0) + amount
+    if (weights[catId] > 6.0) weights[catId] = 6.0 // cap
+    localStorage.setItem('newspulse_category_weights', JSON.stringify(weights))
+  }, [getCategoryWeights])
+
+  const rankStories = useCallback((storiesList) => {
+    const weights = getCategoryWeights()
+    return [...storiesList].sort((a, b) => {
+      const weightA = weights[a.category] || 1.0
+      const weightB = weights[b.category] || 1.0
+      
+      // Decay penalty: half life of ~12 hours to push recent news up
+      const ageA = Date.now() - a.timestamp
+      const ageB = Date.now() - b.timestamp
+      const recencyA = 1 / (1 + ageA / (1000 * 60 * 60 * 12))
+      const recencyB = 1 / (1 + ageB / (1000 * 60 * 60 * 12))
+      
+      const scoreA = weightA * recencyA * (1 + (a.likes / 4000))
+      const scoreB = weightB * recencyB * (1 + (b.likes / 4000))
+      
+      return scoreB - scoreA
+    })
+  }, [getCategoryWeights])
+
+  // ─── Feed Parsing ──────────────────────────────────────────────────
+  const parseXML = useCallback((xmlText, category, customSource = null) => {
+    const parser = new DOMParser()
+    const doc = parser.parseFromString(xmlText, 'text/xml')
+    const items = doc.querySelectorAll('item')
+    const stories = []
+
+    const getArticleImage = (item, cat) => {
+      const enclosure = item.querySelector('enclosure')
+      if (enclosure && enclosure.getAttribute('type')?.startsWith('image/')) {
+        return enclosure.getAttribute('url')
+      }
+      const mediaContent = item.getElementsByTagName('media:content')[0] || item.getElementsByTagName('content')[0]
+      if (mediaContent && mediaContent.getAttribute('url')) {
+        return mediaContent.getAttribute('url')
+      }
+      const mediaThumbnail = item.getElementsByTagName('media:thumbnail')[0]
+      if (mediaThumbnail && mediaThumbnail.getAttribute('url')) {
+        return mediaThumbnail.getAttribute('url')
+      }
+      const description = item.querySelector('description')?.textContent || ''
+      const imgMatch = description.match(/<img[^>]+src=["']([^"']+)["']/i)
+      if (imgMatch) {
+        return imgMatch[1]
+      }
+      return getFallbackImage(cat)
+    }
+
+    items.forEach((item, index) => {
+      let title = item.querySelector('title')?.textContent || ''
+      let description = item.querySelector('description')?.textContent || ''
+      
+      // Strip HTML
+      description = description.replace(/<[^>]*>/g, '').trim()
+      description = decodeHTMLEntities(description)
+      
+      const link = item.querySelector('link')?.textContent || ''
+      const pubDate = item.querySelector('pubDate')?.textContent || ''
+      
+      let source = customSource || 'News Feed'
+      const sourceMatch = title.match(/(.+)\s+-\s+([^-]+)$/)
+      if (sourceMatch) {
+        title = sourceMatch[1].trim()
+        source = sourceMatch[2].trim()
+      }
+      
+      title = decodeHTMLEntities(title)
+      source = source.replace(/^(https?:\/\/)?(www\.)?/, '').split('/')[0]
+
+      if (title && description && description.length > 15) {
+        stories.push({
+          id: `rss-${category}-${index}-${title.substring(0, 12)}-${pubDate}`,
+          headline: title,
+          summary: description,
+          source: source,
+          link: link,
+          category: category,
+          imageUrl: getArticleImage(item, category),
+          tags: [category.toUpperCase(), source.replace(/\s+/g, '')],
+          time: pubDate ? formatTimeAgo(new Date(pubDate)) : 'Just now',
+          timestamp: pubDate ? new Date(pubDate).getTime() : Date.now(),
+          likes: Math.floor(Math.random() * 850) + 120,
+          comments: Math.floor(Math.random() * 110) + 15,
+          shares: Math.floor(Math.random() * 60) + 8,
+        })
+      }
+    })
+
+    return stories
+  }, [])
+
+  const generateFallbackStories = useCallback((catId) => {
+    const normalizedCat = catId.startsWith('country-') ? 'world' : (catId === 'all' ? 'world' : catId)
+    const items = FALLBACK_STORIES[normalizedCat] || FALLBACK_STORIES['world']
+    return items.map((item, index) => ({
+      id: `fallback-${normalizedCat}-${index}-${Date.now()}`,
+      headline: item.title,
+      summary: item.desc,
+      source: item.source,
+      link: 'https://news.google.com',
+      category: normalizedCat,
+      imageUrl: getFallbackImage(normalizedCat),
+      tags: [normalizedCat.toUpperCase(), item.source.replace(/\s+/g, '')],
+      time: `${index + 1}h ago`,
+      timestamp: Date.now() - index * 3600000 - 120000,
+      likes: Math.floor(Math.random() * 320) + 80,
+      comments: Math.floor(Math.random() * 45) + 6,
+      shares: Math.floor(Math.random() * 22) + 3,
+    }))
+  }, [])
+
+  // ─── Fetching Logic ────────────────────────────────────────────────
+  const loadStories = useCallback(async (append = false, catId = 'all') => {
     setLoading(true)
-    setTimeout(() => {
-      const newStories = []
-      for (let i = 0; i < 5; i++) {
-        storyIdRef.current += 1
-        if (filter && filter.startsWith('country-')) {
-          newStories.push(generateCountryStory(storyIdRef.current, filter.replace('country-', '')))
-        } else {
-          newStories.push(generateStory(storyIdRef.current, filter))
+    try {
+      let fetched = []
+      
+      if (catId.startsWith('country-')) {
+        const countryId = catId.replace('country-', '')
+        const url = getCountryFeedUrl(countryId)
+        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`
+        const res = await fetch(proxyUrl)
+        if (res.ok) {
+          const data = await res.json()
+          if (data && data.contents) {
+            fetched = parseXML(data.contents, 'world', countryId.toUpperCase())
+          }
+        }
+      } else {
+        const urls = CATEGORY_FEEDS[catId] || CATEGORY_FEEDS['all']
+        for (const url of urls) {
+          try {
+            const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`
+            const res = await fetch(proxyUrl)
+            if (!res.ok) continue
+            const data = await res.json()
+            if (data && data.contents) {
+              const parsed = parseXML(data.contents, catId)
+              fetched = [...fetched, ...parsed]
+            }
+          } catch (e) {
+            console.warn(`Failed to fetch feed ${url}`, e)
+          }
         }
       }
-      setStories(prev => append ? [...prev, ...newStories] : newStories)
-      setLoading(false)
-    }, 400)
-  }, [])
 
-  // Infinite scroll
+      if (fetched.length === 0) {
+        fetched = generateFallbackStories(catId)
+      }
+
+      const ranked = rankStories(fetched)
+
+      if (append) {
+        setAllStories(prev => {
+          const combined = [...prev, ...ranked]
+          const seen = new Set()
+          return combined.filter(s => {
+            const isDup = seen.has(s.headline)
+            seen.add(s.headline)
+            return !isDup
+          })
+        })
+      } else {
+        setAllStories(ranked)
+        setPage(0)
+      }
+    } catch (err) {
+      console.error('Error loading stories:', err)
+      const fallbacks = generateFallbackStories(catId)
+      setAllStories(fallbacks)
+    } finally {
+      setLoading(false)
+    }
+  }, [parseXML, rankStories, generateFallbackStories])
+
+  // Initial load
+  useEffect(() => {
+    loadStories(false, selectedCategory)
+  }, [selectedCategory, loadStories])
+
+  // Sync displayed slice based on pagination
+  useEffect(() => {
+    if (allStories.length > 0) {
+      const sliceEnd = Math.min((page + 1) * 5, allStories.length)
+      setDisplayedStories(allStories.slice(0, sliceEnd))
+      
+      // Set default active card ID on load
+      if (!activeStoryId && allStories[0]) {
+        setActiveStoryId(allStories[0].id)
+      }
+    } else {
+      setDisplayedStories([])
+    }
+  }, [allStories, page, activeStoryId])
+
+  // Infinite scroll intersection observer
   useEffect(() => {
     const observer = new IntersectionObserver(
-      (entries) => { if (entries[0].isIntersecting && !loading) setPage(p => p + 1) },
-      { threshold: 0.5 }
+      (entries) => {
+        if (entries[0].isIntersecting && !loading && allStories.length > displayedStories.length) {
+          setPage(p => p + 1)
+        }
+      },
+      { threshold: 0.2 }
     )
     if (observerTarget.current) observer.observe(observerTarget.current)
     return () => observer.disconnect()
-  }, [loading])
+  }, [loading, allStories.length, displayedStories.length])
 
-  useEffect(() => { if (page > 0) loadStories(true, selectedCategory === 'all' ? null : selectedCategory) }, [page, loadStories, selectedCategory])
+  // Track active card visible for scroll TTS stops
+  useEffect(() => {
+    if (displayedStories.length === 0) return
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            setActiveStoryId(entry.target.getAttribute('data-id'))
+          }
+        })
+      },
+      { threshold: 0.6 } // Card must be mostly visible
+    )
+    
+    const elements = document.querySelectorAll('.reels-card-container')
+    elements.forEach(el => observer.observe(el))
+    
+    return () => observer.disconnect()
+  }, [displayedStories])
 
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
     setRefreshing(true)
-    storyIdRef.current += 100
-    setPage(0)
-    loadStories(false, selectedCategory === 'all' ? null : selectedCategory)
-    setTimeout(() => setRefreshing(false), 600)
+    window.speechSynthesis.cancel()
+    await loadStories(false, selectedCategory)
+    setTimeout(() => setRefreshing(false), 500)
   }
 
   const handleExploreSelect = (catId) => {
     setSelectedCategory(catId)
     setActiveTab('feed')
-    setPage(0)
-    storyIdRef.current += 50
-    loadStories(false, catId === 'all' ? null : catId)
+    setAllStories([])
+    setDisplayedStories([])
+    setActiveStoryId(null)
+  }
+
+  const handleEngagement = (catId, type) => {
+    let weight = 0.5
+    if (type === 'like') weight = 2.0
+    if (type === 'click') weight = 1.5
+    if (type === 'share') weight = 1.0
+    if (type === 'tts') weight = 1.2
+    boostCategoryWeight(catId, weight)
   }
 
   return (
-    <div className="h-screen w-screen overflow-hidden flex flex-col bg-gradient-to-b from-gray-950 via-slate-950 to-black select-none">
-      {/* Header */}
-      <header className="shrink-0 bg-gray-950/80 backdrop-blur-xl border-b border-white/10 shadow-lg shadow-black/20">
-        <div className="max-w-2xl mx-auto px-4 py-3">
-          <div className="flex items-center justify-between mb-3">
-            {/* Logo */}
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-violet-500 via-purple-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/30 ring-1 ring-white/20">
-                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+    <div className="h-screen w-screen overflow-hidden flex flex-col bg-zinc-950 text-white select-none">
+      {/* Immersive Header */}
+      <header className="shrink-0 bg-zinc-950/80 backdrop-blur-xl border-b border-white/5 shadow-md shadow-black/30 z-30">
+        <div className="max-w-md mx-auto px-4.5 py-3">
+          <div className="flex items-center justify-between">
+            {/* Pulsing Glowing Logo */}
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 bg-gradient-to-br from-violet-500 via-purple-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-purple-900/30 ring-1 ring-white/10">
+                <svg className="w-4.5 h-4.5 text-white fill-none stroke-current" viewBox="0 0 24 24" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
               </div>
-              <div>
-                <h1 className="text-xl font-extrabold bg-gradient-to-r from-violet-400 via-purple-400 to-indigo-400 bg-clip-text text-transparent tracking-tight">NewsPulse</h1>
-                <p className="text-[10px] font-medium text-gray-500 uppercase tracking-widest">Your World, In Brief</p>
+              <div className="text-left">
+                <h1 className="text-lg font-extrabold bg-gradient-to-r from-violet-400 via-purple-300 to-indigo-400 bg-clip-text text-transparent tracking-tight">NewsPulse</h1>
+                <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest leading-none">TikTok of News</p>
               </div>
             </div>
 
-            {/* Refresh */}
-            <button onClick={handleRefresh} disabled={refreshing} className={`flex items-center gap-2 px-3 py-2 rounded-xl font-medium text-sm transition-all ${refreshing ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30' : 'bg-white/5 hover:bg-purple-500/10 text-gray-400 hover:text-purple-400 border border-white/10 active:scale-95'}`}>
-              <svg className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-              <span className="hidden sm:inline">{refreshing ? 'Refreshing...' : 'Refresh'}</span>
+            {/* Refresh Feed */}
+            <button 
+              onClick={handleRefresh} 
+              disabled={refreshing} 
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full font-bold text-[11px] transition-all uppercase tracking-wider ${
+                refreshing 
+                  ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30' 
+                  : 'bg-white/5 hover:bg-purple-500/10 text-gray-400 hover:text-purple-400 border border-white/10 active:scale-95'
+              }`}
+            >
+              <svg className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              <span>{refreshing ? 'Syncing...' : 'Sync'}</span>
             </button>
           </div>
 
-          {/* Tab Navigation */}
-          <nav className="flex gap-1 bg-white/5 p-1 rounded-xl border border-white/10">
-            <button onClick={() => { setActiveTab('feed'); setPage(0); loadStories(false, selectedCategory === 'all' ? null : selectedCategory) }} className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold transition-all ${activeTab === 'feed' ? 'bg-white/10 text-purple-400 shadow-sm border border-white/10' : 'text-gray-500 hover:text-gray-300'}`}>
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" /></svg>
+          {/* Navigation Controls */}
+          <nav className="flex gap-1.5 mt-3.5 bg-white/5 p-1 rounded-full border border-white/5">
+            <button
+              onClick={() => setActiveTab('feed')}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-full text-xs font-bold transition-all uppercase tracking-wider ${
+                activeTab === 'feed'
+                  ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-lg border border-white/15'
+                  : 'text-gray-400 hover:text-gray-200'
+              }`}
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+              </svg>
               Feed
             </button>
-            <button onClick={() => setActiveTab('explore')} className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold transition-all ${activeTab === 'explore' ? 'bg-white/10 text-purple-400 shadow-sm border border-white/10' : 'text-gray-500 hover:text-gray-300'}`}>
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+            <button
+              onClick={() => setActiveTab('explore')}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-full text-xs font-bold transition-all uppercase tracking-wider ${
+                activeTab === 'explore'
+                  ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-lg border border-white/15'
+                  : 'text-gray-400 hover:text-gray-200'
+              }`}
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
               Explore
             </button>
           </nav>
         </div>
       </header>
 
-      {/* Content */}
-      <div className="flex-1 overflow-hidden">
+      {/* Main Viewport Container */}
+      <div className="flex-1 overflow-hidden relative">
         {activeTab === 'explore' ? (
-          <div className="h-full w-full overflow-y-auto no-scrollbar">
+          <div className="h-full w-full overflow-y-auto no-scrollbar bg-zinc-950">
             <ExplorePage onSelectCategory={handleExploreSelect} selectedCategory={selectedCategory} />
           </div>
         ) : (
-          <div className="h-full w-full max-w-2xl mx-auto px-4 py-4 flex flex-col overflow-hidden">
-            {/* Active filter badge */}
+          <div className="h-full w-full bg-zinc-950 flex flex-col justify-center">
+            {/* Current Active Category Pill Indicator */}
             {selectedCategory !== 'all' && (
-              <div className="flex items-center gap-2 mb-3 shrink-0">
-                <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border ${CATEGORIES.find(c => c.id === selectedCategory)?.bg}`}>
-                  {CATEGORIES.find(c => c.id === selectedCategory)?.icon} {CATEGORIES.find(c => c.id === selectedCategory)?.label}
-                </span>
-                <button onClick={() => handleExploreSelect('all')} className="text-xs text-gray-500 hover:text-red-400 transition-colors">Clear filter</button>
+              <div className="absolute top-4 left-0 right-0 mx-auto z-20 flex justify-center pointer-events-none">
+                <div className="flex items-center gap-2 bg-purple-600/90 border border-purple-400/40 text-white text-[10px] font-extrabold px-3.5 py-1.5 rounded-full shadow-lg pointer-events-auto backdrop-blur-md">
+                  <span>Filtering: {selectedCategory.startsWith('country-') ? COUNTRIES.find(c => c.id === selectedCategory.replace('country-', ''))?.label : CATEGORIES.find(c => c.id === selectedCategory)?.label}</span>
+                  <button 
+                    onClick={() => handleExploreSelect('all')} 
+                    className="hover:text-red-300 font-black ml-1 border-l border-white/20 pl-2 cursor-pointer transition-colors"
+                  >
+                    CLEAR
+                  </button>
+                </div>
               </div>
             )}
 
-            {/* Reels snapping container */}
-            <div className="flex-1 w-full overflow-y-scroll snap-y snap-mandatory no-scrollbar flex flex-col gap-4 pb-4">
-              {stories.map(story => (
-                <div key={story.id} className="h-full min-h-[calc(100vh-175px)] max-h-[750px] w-full shrink-0 snap-start">
-                  <NewsCard story={story} />
+            {/* Vertical Snapping Container */}
+            <div 
+              ref={feedContainerRef}
+              className="h-full w-full max-w-md mx-auto overflow-y-scroll snap-y snap-mandatory no-scrollbar flex flex-col py-1.5 sm:py-3.5 px-2 sm:px-0"
+            >
+              {displayedStories.map(story => (
+                <div 
+                  key={story.id} 
+                  data-id={story.id}
+                  className="reels-card-container w-full h-[calc(100vh-160px)] sm:h-[calc(100vh-180px)] shrink-0 snap-start snap-always flex items-center justify-center py-1.5 sm:py-2.5"
+                >
+                  <NewsCard 
+                    story={story} 
+                    isActive={story.id === activeStoryId}
+                    onAction={(type) => handleEngagement(story.category, type)} 
+                  />
                 </div>
               ))}
+
               {loading && (
-                <>
-                  <div className="h-full min-h-[calc(100vh-175px)] max-h-[750px] w-full shrink-0 snap-start">
-                    <SkeletonCard />
-                  </div>
-                  <div className="h-full min-h-[calc(100vh-175px)] max-h-[750px] w-full shrink-0 snap-start">
-                    <SkeletonCard />
-                  </div>
-                </>
+                <div className="w-full h-[calc(100vh-160px)] sm:h-[calc(100vh-180px)] shrink-0 snap-start flex items-center justify-center py-2.5">
+                  <SkeletonCard />
+                </div>
               )}
-              {/* Observer target */}
-              <div ref={observerTarget} className="h-4 shrink-0" />
+
+              {/* Observer marker for infinite pagination */}
+              <div ref={observerTarget} className="h-10 shrink-0 w-full flex items-center justify-center text-xs font-bold text-gray-500 uppercase tracking-widest">
+                {displayedStories.length > 0 && !loading && 'loading more content...'}
+              </div>
             </div>
           </div>
         )}
       </div>
 
-      {/* Footer */}
-      <footer className="shrink-0 py-2.5 text-center border-t border-white/5 bg-black/40">
-        <p className="text-[10px] text-gray-500 font-medium">NewsPulse • Swipe up for next story • Auto-updates</p>
+      {/* Persistent Swiping Hint Footer */}
+      <footer className="shrink-0 py-2.5 border-t border-white/5 bg-zinc-950/90 text-center z-15 backdrop-blur-md">
+        <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest flex items-center justify-center gap-1.5 select-none">
+          Swipe UP for Next Story
+          <span className="inline-block animate-bounce font-black">↑</span>
+          • Double-Tap to Like
+        </p>
       </footer>
     </div>
   )
