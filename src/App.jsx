@@ -762,7 +762,9 @@ function App() {
         const randomized = [...fallbacks].sort(() => Math.random() - 0.5)
         setStories(randomized)
       } else {
-        setStories(allFetched)
+        // Shuffle the live fetched stories list to keep it feeling fresh and dynamic on refresh!
+        const randomized = [...allFetched].sort(() => Math.random() - 0.5)
+        setStories(randomized)
       }
     } catch (err) {
       console.warn('Failed to fetch stories:', err)
