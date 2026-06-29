@@ -192,6 +192,76 @@ const COUNTRY_WORLD_FEEDS = {
 // ─── CORS Proxy for RSS Feeds ────────────────────────────────────────
 const PROXY_URL = 'https://api.allorigins.win/raw?url='
 
+// ─── India-specific sources for each category ────────────────────────
+function getIndiaSources(category) {
+  const indiaSourcesMap = {
+    world: [
+      { name: 'NDTV', url: 'https://www.ndtv.com/world-news', feed: 'https://feeds.feedburner.com/ndtvnews-top-stories' },
+      { name: 'Times of India World', url: 'https://timesofindia.indiatimes.com/world-news', feed: 'https://timesofindia.indiatimes.com/rssfeedstopstories.cms' }
+    ],
+    business: [
+      { name: 'Economic Times', url: 'https://economictimes.indiatimes.com', feed: 'https://economictimes.indiatimes.com/rssdefaultpath.cms' },
+      { name: 'Moneycontrol', url: 'https://www.moneycontrol.com/news/business/', feed: 'https://www.moneycontrol.com/rss/business.xml' }
+    ],
+    technology: [
+      { name: 'YourStory Tech', url: 'https://yourstory.com/tech', feed: 'https://yourstory.com/tech/feed' },
+      { name: 'Inc42', url: 'https://inc42.com', feed: 'https://inc42.com/feed/' }
+    ],
+    sports: [
+      { name: 'ESPNcricinfo', url: 'https://www.espncricinfo.com', feed: 'https://www.espncricinfo.com/rss/content/story/feeds/0.xml' },
+      { name: 'Sportskeeda Cricket', url: 'https://www.sportskeeda.com/cricket', feed: 'https://www.sportskeeda.com/feed/' }
+    ],
+    entertainment: [
+      { name: 'Filmfare Bollywood', url: 'https://www.filmfare.com/bollywood-news/', feed: 'https://www.filmfare.com/rss.xml' },
+      { name: 'India Today Entertainment', url: 'https://www.indiatoday.in/entertainment', feed: 'https://www.indiatoday.in/entertainment/rss' }
+    ],
+    health: [
+      { name: 'Healthshots India', url: 'https://www.healthshots.com', feed: 'https://www.healthshots.com/feed/' },
+      { name: 'Times of India Health', url: 'https://timesofindia.indiatimes.com/life-style/health-fitness', feed: 'https://timesofindia.indiatimes.com/rssfeedstopstories.cms' }
+    ],
+    startups: [
+      { name: 'YourStory Startups', url: 'https://yourstory.com/startups', feed: 'https://yourstory.com/startups/feed' },
+      { name: 'Inc42 Media', url: 'https://inc42.com/media/', feed: 'https://inc42.com/feed/' }
+    ],
+    politics: [
+      { name: 'NDTV Politics', url: 'https://www.ndtv.com/india', feed: 'https://feeds.feedburner.com/ndtvnews-top-stories' },
+      { name: 'India Today Politics', url: 'https://www.indiatoday.in/india/', feed: 'https://www.indiatoday.in/india/rss' }
+    ],
+    science: [
+      { name: 'Science India', url: 'https://www.scienceindia.in', feed: 'https://www.scienceindia.in/feed/' },
+      { name: 'Times of India Science', url: 'https://timesofindia.indiatimes.com/science', feed: 'https://timesofindia.indiatimes.com/rssfeedstopstories.cms' }
+    ],
+    automobile: [
+      { name: 'Overdrive India', url: 'https://www.overdrive.in', feed: 'https://www.overdrive.in/feed/' },
+      { name: 'GT Auto India', url: 'https://www.gtautoindia.com', feed: 'https://www.gtautoindia.com/feed/' }
+    ],
+    travel: [
+      { name: 'India Today Travel', url: 'https://www.indiatoday.in/travel', feed: 'https://www.indiatoday.in/travel/rss' },
+      { name: 'Hindustan Times Travel', url: 'https://www.hindustantimes.com/travel', feed: 'https://www.hindustantimes.com/feed' }
+    ],
+    fashion: [
+      { name: 'Vogue India', url: 'https://www.vogue.in', feed: 'https://www.vogue.in/rss.xml' },
+      { name: 'Elle India', url: 'https://www.elle.com', feed: 'https://www.elle.com/feed/' }
+    ],
+    education: [
+      { name: 'Education Times India', url: 'https://www.educationtimes.com', feed: 'https://www.educationtimes.com/feed/' },
+      { name: 'Times of India Education', url: 'https://timesofindia.indiatimes.com/education', feed: 'https://timesofindia.indiatimes.com/rssfeedstopstories.cms' }
+    ],
+    miscellaneous: [
+      { name: 'India Today Weird', url: 'https://www.indiatoday.in', feed: 'https://www.indiatoday.in/feed/' },
+      { name: 'Hindustan Times', url: 'https://www.hindustantimes.com', feed: 'https://www.hindustantimes.com/feed' }
+    ]
+  }
+  
+  if (category === 'all') return null
+  
+  const sources = indiaSourcesMap[category]
+  if (!sources) return null
+  
+  // Shuffle and return up to 2 sources per category for variety
+  return [...sources].sort(() => Math.random() - 0.5).slice(0, 2)
+}
+
 // ─── Share Component — shares from your website, not the original article ──
 function ShareButton({ headline, summary, storyId: propStoryId }) {
   const [copied, setCopied] = useState(false)
@@ -1178,10 +1248,6 @@ function App() {
     const saved = localStorage.getItem('NEWS_ENABLE_TRANSLATION')
     return saved !== 'false' // Default to enabled unless explicitly disabled
   })
-  const [newsLanguage, setNewsLanguage] = useState(() => {
-    return localStorage.getItem('NEWS_LANGUAGE') || 'en'
-  })
-  const [settingsOpen, setSettingsOpen] = useState(false)
 
   // Parse RSS or Atom XML to stories
   const parseRSSFeed = useCallback((xmlText, sourceName, category) => {
@@ -1267,12 +1333,22 @@ function App() {
       const activeWorldFeeds = COUNTRY_WORLD_FEEDS[userCountry] || COUNTRY_WORLD_FEEDS.global
       
       if (selectedCategory === 'all') {
-        // Fetch all category feeds, replacing world category with regional feeds
+        // Fetch all category feeds, replacing world category with regional feeds based on selected country
         Object.entries(NEWS_SOURCES).forEach(([cat, sources]) => {
           if (cat === 'world') {
-            activeWorldFeeds.forEach(source => urlsToFetch.push({ url: source.feed, name: source.name, category: cat }))
+            activeWorldFeeds.forEach(source => urlsToFetch.push({ url: source.feed, name: `${source.name} (${userCountry})`, category: cat }))
           } else {
-            sources.forEach(source => urlsToFetch.push({ url: source.feed, name: source.name, category: cat }))
+            // When a specific country is selected, prefer India-specific sources for all categories
+            if (userCountry !== 'global') {
+              const indiaSources = getIndiaSources(cat)
+              if (indiaSources && indiaSources.length > 0) {
+                indiaSources.forEach(source => urlsToFetch.push({ url: source.feed, name: `${source.name} (India)`, category: cat }))
+              } else {
+                sources.forEach(source => urlsToFetch.push({ url: source.feed, name: source.name, category: cat }))
+              }
+            } else {
+              sources.forEach(source => urlsToFetch.push({ url: source.feed, name: source.name, category: cat }))
+            }
           }
         })
       } else if (selectedCategory === 'world') {
@@ -1287,19 +1363,22 @@ function App() {
         urlsToFetch = urlsToFetch.filter(item => userInterests.includes(item.category))
       }
 
-      const PROXY_URLS = [
-        'https://api.allorigins.win/raw?url=',
-        'https://corsproxy.io/?'
-      ]
+      // Shuffle proxy order for variety on each refresh
+      const shuffledProxies = [...PROXY_URLS].sort(() => Math.random() - 0.5)
+      
+      // Shuffle feed order so different sources are tried first
+      const shuffledUrls = [...urlsToFetch].sort(() => Math.random() - 0.5)
 
-      // Fetch a single feed with fallback proxies
+      // Fetch a single feed with fallback proxies and multiple cache-busting strategies
       const fetchWithFallback = async (feedUrl, name, category) => {
         const separator = feedUrl.includes('?') ? '&' : '?'
-        const feedUrlWithBuster = `${feedUrl}${separator}_cb=${Date.now()}`
         
-        for (const proxyBase of PROXY_URLS) {
+        for (const proxyBase of shuffledProxies) {
           try {
-            const proxyUrl = `${proxyBase}${encodeURIComponent(feedUrlWithBuster)}`
+            // Use unique cache buster per attempt
+            const cacheBuster = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
+            const proxyUrl = `${proxyBase}${encodeURIComponent(feedUrl + separator + '_cb=' + cacheBuster)}`
+            
             const controller = new AbortController()
             const timeoutId = setTimeout(() => controller.abort(), 4000) // 4s timeout per proxy request
             
@@ -1320,8 +1399,8 @@ function App() {
         return []
       }
 
-      // Fetch all feeds in parallel with fallback proxies
-      const fetchPromises = urlsToFetch.map(({ url, name, category }) => fetchWithFallback(url, name, category))
+      // Fetch all feeds in parallel with shuffled order and multiple proxies
+      const fetchPromises = shuffledUrls.map(({ url, name, category }) => fetchWithFallback(url, name, category))
       const results = await Promise.all(fetchPromises)
       let allFetched = results.flat()
 
@@ -1553,16 +1632,11 @@ Description: ${story.originalSummary}`
               </div>
             </div>
 
-            {/* Settings & Refresh */}
-            <div className="flex items-center gap-2">
-              <button onClick={() => setSettingsOpen(true)} className={`flex items-center gap-2 px-3 py-2 rounded-xl font-medium text-sm transition-all ${refreshing ? 'bg-white/5 text-gray-500 border border-white/5' : 'bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white border border-white/10 active:scale-95'}`}>
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-              </button>
-              <button onClick={handleRefresh} disabled={refreshing} className={`flex items-center gap-2 px-3 py-2 rounded-xl font-medium text-sm transition-all ${refreshing ? 'bg-white/5 text-gray-500 border border-white/5' : 'bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white border border-white/10 active:scale-95'}`}>
-                <svg className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-                <span className="hidden sm:inline">{refreshing ? 'Refreshing...' : 'Refresh'}</span>
-              </button>
-            </div>
+            {/* Refresh */}
+            <button onClick={handleRefresh} disabled={refreshing} className={`flex items-center gap-2 px-3 py-2 rounded-xl font-medium text-sm transition-all ${refreshing ? 'bg-white/5 text-gray-500 border border-white/5' : 'bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white border border-white/10 active:scale-95'}`}>
+              <svg className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+              <span className="hidden sm:inline">{refreshing ? 'Refreshing...' : 'Refresh'}</span>
+            </button>
           </div>
 
           {/* Tab Navigation */}
