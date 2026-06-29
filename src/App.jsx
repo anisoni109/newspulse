@@ -192,14 +192,21 @@ const COUNTRY_WORLD_FEEDS = {
 // ─── CORS Proxy for RSS Feeds ────────────────────────────────────────
 const PROXY_URL = 'https://api.allorigins.win/raw?url='
 
-// ─── Share Component ────────────────────────────────────────────────
-function ShareButton({ headline, summary, link }) {
+// ─── Share Component — shares from your website, not the original article ──
+function ShareButton({ headline, summary, storyId: propStoryId }) {
   const [copied, setCopied] = useState(false)
 
+  // Generate a unique shareable URL for this story on your website
+  const getShareUrl = () => {
+    const storyId = encodeURIComponent(propStoryId || contentHash(headline + summary))
+    return `${window.location.origin}/#/story/${storyId}`
+  }
+
   const handleShare = async () => {
-    const text = `${headline}\n\n${summary}\n\nRead more: ${link}`
+    const shareUrl = getShareUrl()
+    const text = `${headline}\n\n${summary}\n\nRead more on NewsPulse: ${shareUrl}`
     if (navigator.share) {
-      try { await navigator.share({ title: headline, text, url: link }) } catch {}
+      try { await navigator.share({ title: headline, text, url: shareUrl }) } catch {}
     } else {
       try {
         await navigator.clipboard.writeText(text)
@@ -210,24 +217,127 @@ function ShareButton({ headline, summary, link }) {
   }
 
   return (
-    <button onClick={handleShare} className="flex items-center gap-1.5 text-xs font-medium text-gray-400 hover:text-blue-600 transition-colors">
+    <button onClick={handleShare} className="flex items-center gap-1.5 text-xs font-medium text-white/60 hover:text-white transition-colors">
       {copied ? (
         <>
-          <svg className="w-3.5 h-3.5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-          <span className="text-green-500">Copied!</span>
+          <svg className="w-3.5 h-3.5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+          <span className="text-green-400">Copied!</span>
         </>
       ) : (
         <>
           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
-          <span>Share</span>
+          <span className="text-white/70">Share</span>
         </>
       )}
     </button>
   )
 }
 
+// ─── Settings Modal Component ──────────────────────────────────────
+function SettingsModal({ isOpen, onClose, newsLanguage, setNewsLanguage }) {
+  if (!isOpen) return null
+
+  const LANGUAGES = [
+    { id: 'en', label: 'English', flag: '🇬🇧' },
+    { id: 'hi', label: 'हिंदी (Hindi)', flag: '🇮🇳' },
+    { id: 'es', label: 'Español (Spanish)', flag: '🇪🇸' },
+    { id: 'fr', label: 'Français (French)', flag: '🇫🇷' },
+    { id: 'de', label: 'Deutsch (German)', flag: '🇩🇪' },
+    { id: 'pt', label: 'Português (Portuguese)', flag: '🇧🇷' },
+    { id: 'ja', label: '日本語 (Japanese)', flag: '🇯🇵' },
+    { id: 'zh', label: '中文 (Chinese)', flag: '🇨🇳' }
+  ]
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      
+      {/* Modal */}
+      <div className="relative w-full max-w-md bg-gray-900 border-t sm:border border-white/10 rounded-t-2xl sm:rounded-2xl shadow-2xl animate-slide-up">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-white/10">
+          <h2 className="text-base font-bold text-white flex items-center gap-2">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+            Settings
+          </h2>
+          <button onClick={onClose} className="p-1.5 rounded-full hover:bg-white/10 text-gray-400 hover:text-white transition-colors">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="p-4 space-y-4 max-h-[60vh] overflow-y-auto">
+          {/* News Language Section */}
+          <div className="space-y-3">
+            <div>
+              <h3 className="text-xs font-bold text-gray-300 uppercase tracking-widest flex items-center gap-2">
+                🌐 News Display Language
+              </h3>
+              <p className="text-[10px] text-gray-500 mt-0.5">Choose the language for news headlines and summaries (default: English)</p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              {LANGUAGES.map(lang => (
+                <button
+                  key={lang.id}
+                  onClick={() => {
+                    setNewsLanguage(lang.id)
+                    localStorage.setItem('NEWS_LANGUAGE', lang.id)
+                  }}
+                  className={`flex items-center gap-2 p-3 rounded-xl border transition-all ${
+                    newsLanguage === lang.id
+                      ? 'border-blue-500 bg-blue-500/10 text-white shadow-md'
+                      : 'border-white/5 bg-gray-800/40 hover:bg-gray-700/40 text-gray-400 hover:text-gray-300'
+                  }`}
+                >
+                  <span className="text-lg">{lang.flag}</span>
+                  <div className="text-left">
+                    <p className="text-xs font-semibold">{lang.label.split(' ')[0]}</p>
+                    {newsLanguage === lang.id && (
+                      <p className="text-[9px] text-blue-400">Selected</p>
+                    )}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Info */}
+          <div className="bg-white/5 rounded-xl p-3 border border-white/5">
+            <p className="text-[10px] text-gray-400 leading-relaxed">
+              ℹ️ Selected language affects how news is displayed. Translations (Hindi toggle on cards) work independently and require API calls.
+            </p>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="p-4 border-t border-white/10">
+          <button
+            onClick={onClose}
+            className="w-full py-2.5 rounded-xl font-bold text-sm bg-gradient-to-r from-blue-600 to-indigo-600 hover:opacity-90 text-white transition-all"
+          >
+            Done
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Content Hash Helper for Translation Cache ──────────────────────
+function contentHash(str) {
+  let hash = 0
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i)
+    hash = ((hash << 5) - hash) + char
+    hash |= 0
+  }
+  return Math.abs(hash).toString(36)
+}
+
 // ─── News Card ──────────────────────────────────────────────────────
-function NewsCard({ story, appTheme = 'violet' }) {
+function NewsCard({ story, appTheme = 'violet', enableTranslation = true }) {
   const catInfo = CATEGORIES.find(c => c.id === story.category) || CATEGORIES[0]
   const [cardLang, setCardLang] = useState('en')
   const [translating, setTranslating] = useState(false)
@@ -238,6 +348,9 @@ function NewsCard({ story, appTheme = 'violet' }) {
 
   const activeTheme = THEMES.find(t => t.id === appTheme) || THEMES[0]
 
+  // Content-based cache key for faster lookups (works even if link changes)
+  const translationCacheKey = `trans_${contentHash(story.originalHeadline + story.originalSummary)}`
+
   const handleTranslate = async (targetLang) => {
     if (targetLang === 'en') {
       if (isNarrating) {
@@ -247,14 +360,28 @@ function NewsCard({ story, appTheme = 'violet' }) {
       setCardLang('en')
       return
     }
-    if (story.hindiSummary) {
+
+    // Check localStorage cache first with content-based key
+    const cached = story.hindiSummary || localStorage.getItem(translationCacheKey)
+    if (cached && !translating) {
       if (isNarrating) {
         window.speechSynthesis.cancel()
         setIsNarrating(false)
       }
+      // Restore from cache into story object
+      try {
+        const cachedData = JSON.parse(cached)
+        story.hindiHeadline = cachedData.hindiHeadline || ''
+        story.hindiSummary = cachedData.hindiSummary || ''
+        story.hindiExtendedSummary = cachedData.hindiExtendedSummary || []
+        story.extendedSummary = cachedData.extendedSummary || []
+      } catch (e) {}
       setCardLang('hi')
       return
     }
+
+    // Only show translate button if enableTranslation is true
+    if (!enableTranslation) return
 
     setTranslating(true)
     try {
@@ -284,11 +411,9 @@ Description: ${story.originalSummary}`
             story.hindiExtendedSummary = parsed.hindiExtendedSummary
             story.extendedSummary = parsed.extendedSummary || []
 
-            // Save to cache
+            // Save to cache with content-based key for instant future access
             try {
-              const cache = JSON.parse(localStorage.getItem('AI_STORIES_CACHE') || '{}')
-              cache[story.link] = {
-                ...cache[story.link],
+              const cacheData = {
                 headline: parsed.headline || story.headline,
                 summary: parsed.summary || story.summary,
                 extendedSummary: parsed.extendedSummary || [],
@@ -296,7 +421,11 @@ Description: ${story.originalSummary}`
                 hindiSummary: parsed.hindiSummary,
                 hindiExtendedSummary: parsed.hindiExtendedSummary
               }
-              localStorage.setItem('AI_STORIES_CACHE', JSON.stringify(cache))
+              localStorage.setItem(translationCacheKey, JSON.stringify(cacheData))
+              // Also save by link for backward compatibility
+              const linkCache = JSON.parse(localStorage.getItem('AI_STORIES_CACHE') || '{}')
+              linkCache[story.link] = cacheData
+              localStorage.setItem('AI_STORIES_CACHE', JSON.stringify(linkCache))
             } catch (e) {}
 
             if (isNarrating) {
@@ -400,7 +529,7 @@ Description: ${story.originalSummary}`
   const activeSummary = cardLang === 'hi' ? (story.hindiSummary || story.summary) : story.summary
 
   return (
-    <article className={`relative bg-gradient-to-br ${catInfo.color} h-full w-full flex flex-col justify-between p-6 rounded-2xl border border-white/10 overflow-hidden shadow-2xl group`}>
+    <article className={`relative bg-gradient-to-br ${catInfo.color} h-full w-full flex flex-col justify-between p-4 sm:p-6 rounded-2xl border border-white/10 overflow-hidden shadow-2xl group`}>
       {/* Ambient glow effects */}
       <div className="absolute inset-0 opacity-30 pointer-events-none">
         <div className="absolute top-[-20%] right-[-10%] w-[80%] h-[75%] bg-white/10 rounded-full blur-[120px]" />
@@ -414,33 +543,35 @@ Description: ${story.originalSummary}`
         </div>
         
         <div className="flex items-center gap-2.5">
-          {/* Language Switcher Badge */}
-          <div className="flex items-center bg-black/35 rounded-full border border-white/15 p-0.5 shadow-inner">
-            <button
-              onClick={() => handleTranslate('en')}
-              disabled={translating}
-              className={`px-2.5 py-1 rounded-full text-[9px] font-bold uppercase transition-all ${
-                cardLang === 'en'
-                  ? `bg-white/15 text-white`
-                  : 'text-white/40 hover:text-white/75'
-              }`}
-            >
-              EN
-            </button>
-            <button
-              onClick={() => handleTranslate('hi')}
-              disabled={translating}
-              className={`px-2.5 py-1 rounded-full text-[9px] font-bold uppercase transition-all flex items-center gap-1 ${
-                cardLang === 'hi'
-                  ? `bg-white/15 text-white`
-                  : 'text-white/40 hover:text-white/75'
-              }`}
-            >
-              {translating ? (
-                <svg className="animate-spin h-2.5 w-2.5 text-white" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" /></svg>
-              ) : 'HI'}
-            </button>
-          </div>
+          {/* Language Switcher Badge - only show when translation is enabled */}
+          {enableTranslation && (
+            <div className="flex items-center bg-black/35 rounded-full border border-white/15 p-0.5 shadow-inner">
+              <button
+                onClick={() => handleTranslate('en')}
+                disabled={translating}
+                className={`px-2.5 py-1 rounded-full text-[9px] font-bold uppercase transition-all ${
+                  cardLang === 'en'
+                    ? `bg-white/15 text-white`
+                    : 'text-white/40 hover:text-white/75'
+                }`}
+              >
+                EN
+              </button>
+              <button
+                onClick={() => handleTranslate('hi')}
+                disabled={translating}
+                className={`px-2.5 py-1 rounded-full text-[9px] font-bold uppercase transition-all flex items-center gap-1 ${
+                  cardLang === 'hi'
+                    ? `bg-white/15 text-white`
+                    : 'text-white/40 hover:text-white/75'
+                }`}
+              >
+                {translating ? (
+                  <svg className="animate-spin h-2.5 w-2.5 text-white" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" /></svg>
+                ) : 'HI'}
+              </button>
+            </div>
+          )}
 
           <button 
             onClick={toggleNarration}
@@ -467,7 +598,7 @@ Description: ${story.originalSummary}`
             )}
           </button>
           
-          <ShareButton headline={activeHeadline} summary={activeSummary} link={story.link} />
+          <ShareButton headline={activeHeadline} summary={activeSummary} storyId={story.id || contentHash(activeHeadline + activeSummary)} />
         </div>
       </div>
 
@@ -670,17 +801,11 @@ function ExplorePage({
   userCountry,
   setUserCountry,
   appTheme,
-  setAppTheme
+  setAppTheme,
+  enableTranslation,
+  setEnableTranslation
 }) {
-  const [tempCountry, setTempCountry] = useState(userCountry)
-  const [tempTheme, setTempTheme] = useState(appTheme)
   const [saveStatus, setSaveStatus] = useState('') // '' | 'saving' | 'saved'
-
-  // Sync state with props
-  useEffect(() => {
-    setTempCountry(userCountry)
-    setTempTheme(appTheme)
-  }, [userCountry, appTheme])
 
   // Play subtle visual audio feedback click chime
   const playClickChime = () => {
@@ -716,53 +841,24 @@ function ExplorePage({
     localStorage.setItem('NEWS_USER_INTERESTS', JSON.stringify(updated))
   }
 
-  const handleSave = () => {
-    setSaveStatus('saving')
-    setTimeout(() => {
-      setUserCountry(tempCountry)
-      setAppTheme(tempTheme)
-      localStorage.setItem('NEWS_USER_COUNTRY', tempCountry)
-      localStorage.setItem('NEWS_APP_THEME', tempTheme)
-      setSaveStatus('saved')
-
-      // Synthesized success audio double-ping
-      try {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)()
-        const osc = ctx.createOscillator()
-        const gain = ctx.createGain()
-        osc.connect(gain)
-        gain.connect(ctx.destination)
-        osc.frequency.setValueAtTime(587.33, ctx.currentTime) // D5
-        osc.frequency.setValueAtTime(880, ctx.currentTime + 0.08) // A5
-        gain.gain.setValueAtTime(0.03, ctx.currentTime)
-        gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.25)
-        osc.start()
-        osc.stop(ctx.currentTime + 0.25)
-      } catch (e) {}
-
-      setTimeout(() => setSaveStatus(''), 2000)
-    }, 600)
-  }
-
-  const activeTheme = THEMES.find(t => t.id === tempTheme) || THEMES[0]
+  const activeTheme = THEMES.find(t => t.id === appTheme) || THEMES[0]
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6 space-y-6 overflow-y-auto pb-24">
       {/* Quick Country Presets */}
       <div className="bg-white/5 border border-white/10 rounded-2xl p-5 shadow-xl">
         <h2 className="text-base font-extrabold text-white mb-1.5 flex items-center gap-2">
-          <span>📍</span> Quick Country Presets
+          <span>📍</span> Your Country
         </h2>
-        <p className="text-[11px] text-gray-400 mb-3.5">Switch location instantly to pull localized global reports.</p>
+        <p className="text-[11px] text-gray-400 mb-3.5">Currently selected country for localized news feeds.</p>
         <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
           {COUNTRIES.map(c => {
-            const isActive = tempCountry === c.id
+            const isActive = userCountry === c.id
             return (
               <button
                 key={`preset-${c.id}`}
                 onClick={() => {
                   playClickChime()
-                  setTempCountry(c.id)
                   setUserCountry(c.id)
                   localStorage.setItem('NEWS_USER_COUNTRY', c.id)
                 }}
@@ -779,6 +875,30 @@ function ExplorePage({
           })}
         </div>
       </div>
+
+      {/* Saved Preferences Summary */}
+      <div className="bg-white/5 border border-white/10 rounded-2xl p-5 shadow-xl">
+        <h2 className="text-base font-extrabold text-white mb-3 flex items-center gap-2">
+          <span>💾</span> Saved Preferences
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Country */}
+          <div className="space-y-1.5">
+            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Country</p>
+            <p className="text-xs font-semibold text-white flex items-center gap-2">
+              {COUNTRIES.find(c => c.id === userCountry)?.icon} {COUNTRIES.find(c => c.id === userCountry)?.label}
+            </p>
+          </div>
+          {/* Theme */}
+          <div className="space-y-1.5">
+            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Theme</p>
+            <p className="text-xs font-semibold text-white flex items-center gap-2">
+              {THEMES.find(t => t.id === appTheme)?.icon} {THEMES.find(t => t.id === appTheme)?.label}
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* Dynamic Filter Section */}
       <div className="bg-white/5 border border-white/10 rounded-2xl p-5 shadow-xl">
         <h2 className="text-base font-extrabold text-white mb-1 flex items-center gap-2">
@@ -814,93 +934,31 @@ function ExplorePage({
         </div>
       </div>
 
-      {/* Profile & Personalization Center */}
-      <div className="bg-white/5 border border-white/10 rounded-2xl p-5 shadow-xl space-y-5">
-        <div className="border-b border-white/10 pb-3.5">
-          <h2 className="text-base font-extrabold text-white mb-1 flex items-center gap-2">
-            <span>⚙️</span> Personalization Center
-          </h2>
-          <p className="text-[11px] text-gray-400">Configure your preference location and visual dashboard color accents</p>
-        </div>
-
-        {/* Country Selector */}
-        <div className="space-y-2.5">
-          <h3 className="text-xs font-bold text-gray-300 uppercase tracking-widest flex items-center gap-1.5">
-            <span>📍</span> Preferred Country / Source Location
-          </h3>
-          <p className="text-[10px] text-gray-500">Loads customized local intelligence feeds for the World News sector</p>
-
-          <div className="relative">
-            <select
-              value={tempCountry}
-              onChange={(e) => setTempCountry(e.target.value)}
-              className="w-full bg-gray-900/50 border border-white/10 hover:border-white/20 text-gray-300 text-xs font-bold uppercase tracking-wider rounded-xl p-3.5 outline-none transition-all cursor-pointer focus:ring-1 focus:ring-white/20 appearance-none"
-            >
-              {COUNTRIES.map(c => (
-                <option key={c.id} value={c.id} className="bg-gray-950 text-gray-300 py-2">
-                  {c.icon} {c.label}
-                </option>
-              ))}
-            </select>
-            <div className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-gray-400">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" /></svg>
-            </div>
+      {/* Translation Settings */}
+      <div className="bg-white/5 border border-white/10 rounded-2xl p-5 shadow-xl">
+        <h2 className="text-base font-extrabold text-white mb-3 flex items-center gap-2">
+          <span>🌐</span> Translation Settings
+        </h2>
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-xs font-semibold text-white">Enable Hindi Translations</p>
+            <p className="text-[10px] text-gray-500 mt-0.5">Show EN/HI toggle on news cards (requires API call)</p>
           </div>
-        </div>
-
-        {/* Dynamic App Theme selector */}
-        <div className="space-y-2.5 pt-1.5">
-          <h3 className="text-xs font-bold text-gray-300 uppercase tracking-widest flex items-center gap-1.5">
-            <span>🎨</span> Ambient Accent Theme
-          </h3>
-          <p className="text-[10px] text-gray-500">Adjust the color scheme of headers, navigation tabs, buttons, and animations</p>
-
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            {THEMES.map(themeOpt => {
-              const isSelected = tempTheme === themeOpt.id
-              return (
-                <button
-                  key={themeOpt.id}
-                  onClick={() => setTempTheme(themeOpt.id)}
-                  className={`flex items-center gap-2 p-2.5 rounded-xl border text-left transition-all active:scale-95 ${
-                    isSelected
-                      ? `${themeOpt.border} border shadow-md`
-                      : 'border-white/5 bg-gray-900/25 hover:bg-gray-800/30 text-gray-400 hover:text-gray-300'
-                  }`}
-                >
-                  <span className="text-base">{themeOpt.icon}</span>
-                  <span className="font-bold text-[10px] uppercase tracking-wider truncate">{themeOpt.label}</span>
-                </button>
-              )
-            })}
-          </div>
-        </div>
-
-        {/* Save CTA */}
-        <div className="pt-3 border-t border-white/10 flex justify-end">
           <button
-            onClick={handleSave}
-            disabled={saveStatus === 'saving'}
-            className={`w-full sm:w-auto px-5 py-2.5 rounded-xl font-bold text-[10px] uppercase tracking-wider transition-all shadow-lg active:scale-95 ${
-              saveStatus === 'saved'
-                ? 'bg-green-600 hover:bg-green-550 text-white shadow-green-900/20'
-                : saveStatus === 'saving'
-                ? 'bg-purple-650/45 text-purple-300 cursor-not-allowed'
-                : `bg-gradient-to-r ${activeTheme.color} hover:opacity-90 text-white`
-            }`}
+            onClick={() => {
+              setEnableTranslation(!enableTranslation)
+              localStorage.setItem('NEWS_ENABLE_TRANSLATION', String(!enableTranslation))
+            }}
+            className={`relative w-12 h-6 rounded-full transition-colors ${enableTranslation ? 'bg-green-500' : 'bg-gray-600'}`}
           >
-            {saveStatus === 'saving' ? (
-              <span className="flex items-center gap-1 justify-center">
-                <svg className="animate-spin h-3.5 h-3.5" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" /></svg>
-                Saving...
-              </span>
-            ) : saveStatus === 'saved' ? (
-              'Preferences Saved! ✨'
-            ) : (
-              'Save Preferences'
-            )}
+            <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${enableTranslation ? 'translate-x-6' : ''}`} />
           </button>
         </div>
+      </div>
+
+      {/* Save CTA */}
+      <div className="pt-2">
+        <p className="text-[10px] text-gray-500 text-center">All preferences are saved automatically to your browser.</p>
       </div>
     </div>
   )
@@ -1116,6 +1174,14 @@ function App() {
   const [appTheme, setAppTheme] = useState(() => {
     return localStorage.getItem('NEWS_APP_THEME') || 'violet'
   })
+  const [enableTranslation, setEnableTranslation] = useState(() => {
+    const saved = localStorage.getItem('NEWS_ENABLE_TRANSLATION')
+    return saved !== 'false' // Default to enabled unless explicitly disabled
+  })
+  const [newsLanguage, setNewsLanguage] = useState(() => {
+    return localStorage.getItem('NEWS_LANGUAGE') || 'en'
+  })
+  const [settingsOpen, setSettingsOpen] = useState(false)
 
   // Parse RSS or Atom XML to stories
   const parseRSSFeed = useCallback((xmlText, sourceName, category) => {
@@ -1454,12 +1520,13 @@ Description: ${story.originalSummary}`
     }
   }, [page, fetchStories, loading])
 
-  const handleRefresh = () => {
+  const handleRefresh = useCallback(() => {
     setRefreshing(true)
     setPage(0)
+    setStories([]) // Clear old stories immediately so user sees loading state
     fetchStories()
     setTimeout(() => setRefreshing(false), 600)
-  }
+  }, [fetchStories])
 
   const handleExploreSelect = (catId) => {
     setSelectedCategory(catId)
@@ -1486,11 +1553,16 @@ Description: ${story.originalSummary}`
               </div>
             </div>
 
-            {/* Refresh */}
-            <button onClick={handleRefresh} disabled={refreshing} className={`flex items-center gap-2 px-3 py-2 rounded-xl font-medium text-sm transition-all ${refreshing ? 'bg-white/5 text-gray-500 border border-white/5' : 'bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white border border-white/10 active:scale-95'}`}>
-              <svg className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-              <span className="hidden sm:inline">{refreshing ? 'Refreshing...' : 'Refresh'}</span>
-            </button>
+            {/* Settings & Refresh */}
+            <div className="flex items-center gap-2">
+              <button onClick={() => setSettingsOpen(true)} className={`flex items-center gap-2 px-3 py-2 rounded-xl font-medium text-sm transition-all ${refreshing ? 'bg-white/5 text-gray-500 border border-white/5' : 'bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white border border-white/10 active:scale-95'}`}>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+              </button>
+              <button onClick={handleRefresh} disabled={refreshing} className={`flex items-center gap-2 px-3 py-2 rounded-xl font-medium text-sm transition-all ${refreshing ? 'bg-white/5 text-gray-500 border border-white/5' : 'bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white border border-white/10 active:scale-95'}`}>
+                <svg className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                <span className="hidden sm:inline">{refreshing ? 'Refreshing...' : 'Refresh'}</span>
+              </button>
+            </div>
           </div>
 
           {/* Tab Navigation */}
@@ -1518,6 +1590,8 @@ Description: ${story.originalSummary}`
               setUserCountry={setUserCountry}
               appTheme={appTheme}
               setAppTheme={setAppTheme}
+              enableTranslation={enableTranslation}
+              setEnableTranslation={setEnableTranslation}
             />
           </div>
         ) : (
@@ -1544,14 +1618,14 @@ Description: ${story.originalSummary}`
               {loading && stories.length === 0 ? (
                 // Show skeletons while loading initially
                 Array.from({ length: 3 }).map((_, i) => (
-                  <div key={`skeleton-${i}`} className="h-[calc(100dvh-170px)] min-h-[350px] w-full shrink-0 snap-start snap-always py-1 flex items-center justify-center">
+                  <div key={`skeleton-${i}`} className="h-[calc(100dvh-260px)] min-h-[300px] w-full shrink-0 snap-start snap-always py-1 flex items-center justify-center">
                     <SkeletonCard />
                   </div>
                 ))
               ) : stories.length > 0 ? (
                 stories.map(story => (
-                  <div key={story.id} className="h-[calc(100dvh-170px)] min-h-[350px] w-full shrink-0 snap-start snap-always py-1 flex items-center justify-center">
-                    <NewsCard story={story} appTheme={appTheme} />
+                  <div key={story.id} className="h-[calc(100dvh-260px)] min-h-[300px] w-full shrink-0 snap-start snap-always py-1 flex items-center justify-center">
+                    <NewsCard story={story} appTheme={appTheme} enableTranslation={enableTranslation} />
                   </div>
                 ))
               ) : (
@@ -1581,6 +1655,14 @@ Description: ${story.originalSummary}`
           This application is a demo RSS feed aggregator. We do not claim any copyright or legal ownership over the articles, images, or content aggregated from external sources.
         </p>
       </footer>
+
+      {/* Settings Modal */}
+      <SettingsModal 
+        isOpen={settingsOpen} 
+        onClose={() => setSettingsOpen(false)}
+        newsLanguage={newsLanguage}
+        setNewsLanguage={setNewsLanguage}
+      />
     </div>
   )
 }
