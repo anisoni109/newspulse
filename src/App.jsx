@@ -4,12 +4,19 @@ import React, { useState, useEffect, useRef, useCallback } from 'react'
 const CATEGORIES = [
   { id: 'all', label: 'All News', icon: '🔥', color: 'from-red-500 to-orange-500', bg: 'bg-red-50 text-red-700 border-red-200' },
   { id: 'world', label: 'World', icon: '🌍', color: 'from-blue-600 to-cyan-500', bg: 'bg-blue-50 text-blue-700 border-blue-200' },
+  { id: 'politics', label: 'Politics', icon: '⚖️', color: 'from-purple-600 to-indigo-500', bg: 'bg-purple-50 text-purple-700 border-purple-200' },
   { id: 'business', label: 'Business', icon: '💼', color: 'from-emerald-600 to-teal-500', bg: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
   { id: 'technology', label: 'Technology', icon: '⚡', color: 'from-indigo-600 to-blue-500', bg: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
+  { id: 'startups', label: 'Startups', icon: '🚀', color: 'from-rose-500 to-pink-500', bg: 'bg-rose-50 text-rose-700 border-rose-200' },
+  { id: 'entertainment', label: 'Entertainment', icon: '🎬', color: 'from-fuchsia-600 to-purple-500', bg: 'bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200' },
   { id: 'sports', label: 'Sports', icon: '🏆', color: 'from-orange-500 to-amber-400', bg: 'bg-orange-50 text-orange-700 border-orange-200' },
   { id: 'science', label: 'Science', icon: '🔬', color: 'from-teal-600 to-green-500', bg: 'bg-teal-50 text-teal-700 border-teal-200' },
   { id: 'health', label: 'Health', icon: '❤️‍🩹', color: 'from-pink-600 to-rose-500', bg: 'bg-pink-50 text-pink-700 border-pink-200' },
-  { id: 'entertainment', label: 'Entertainment', icon: '🎬', color: 'from-fuchsia-600 to-purple-500', bg: 'bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200' },
+  { id: 'automobile', label: 'Automobile', icon: '🚗', color: 'from-slate-600 to-zinc-500', bg: 'bg-slate-50 text-slate-700 border-slate-200' },
+  { id: 'travel', label: 'Travel', icon: '✈️', color: 'from-sky-500 to-blue-400', bg: 'bg-sky-50 text-sky-700 border-sky-200' },
+  { id: 'fashion', label: 'Fashion', icon: '👠', color: 'from-pink-500 to-purple-400', bg: 'bg-pink-50 text-pink-700 border-pink-200' },
+  { id: 'education', label: 'Education', icon: '📚', color: 'from-amber-600 to-yellow-500', bg: 'bg-amber-50 text-amber-700 border-amber-200' },
+  { id: 'miscellaneous', label: 'Miscellaneous', icon: '🔮', color: 'from-gray-600 to-slate-500', bg: 'bg-gray-50 text-gray-700 border-gray-200' }
 ]
 
 // ─── Real News Sources with verified URLs and RSS feeds ──────────────
@@ -18,6 +25,10 @@ const NEWS_SOURCES = {
     { name: 'BBC News', url: 'https://www.bbc.com/news', feed: 'https://feeds.bbci.co.uk/news/world/rss.xml' },
     { name: 'Reuters', url: 'https://www.reuters.com', feed: 'https://www.reutersagency.com/feed/?best-topics=news&utm_term=global' },
     { name: 'Al Jazeera', url: 'https://www.aljazeera.com', feed: 'https://www.aljazeera.com/xml/rss/all.xml' },
+  ],
+  politics: [
+    { name: 'Politico', url: 'https://www.politico.com', feed: 'https://rss.politico.com/politics-policy.xml' },
+    { name: 'HuffPost Politics', url: 'https://www.huffpost.com/news/politics', feed: 'https://www.huffpost.com/section/politics/feed' }
   ],
   business: [
     { name: 'BBC Business', url: 'https://www.bbc.com/news/business', feed: 'https://feeds.bbci.co.uk/news/business/rss.xml' },
@@ -28,9 +39,17 @@ const NEWS_SOURCES = {
     { name: 'TechCrunch', url: 'https://techcrunch.com', feed: 'https://techcrunch.com/feed/' },
     { name: 'The Verge', url: 'https://www.theverge.com', feed: 'https://www.theverge.com/rss/index.xml' },
   ],
+  startups: [
+    { name: 'TechCrunch Startups', url: 'https://techcrunch.com/category/startups/', feed: 'https://techcrunch.com/category/startups/feed/' }
+  ],
+  entertainment: [
+    { name: 'BBC Entertainment', url: 'https://www.bbc.com/news/entertainment_and_arts', feed: 'https://feeds.bbci.co.uk/news/entertainment_and_arts/rss.xml' },
+    { name: 'Variety', url: 'https://variety.com', feed: 'https://variety.com/feed/' },
+  ],
   sports: [
+    { name: 'Sky Sports', url: 'https://www.skysports.com', feed: 'https://www.skysports.com/rss/12040' },
     { name: 'BBC Sport', url: 'https://www.bbc.com/sport', feed: 'https://feeds.bbci.co.uk/sport/rss.xml' },
-    { name: 'ESPN', url: 'https://www.espn.com', feed: 'http://www.espn.com/espn/rss/news/' },
+    { name: 'Yahoo Sports', url: 'https://sports.yahoo.com', feed: 'https://sports.yahoo.com/rss/' }
   ],
   science: [
     { name: 'BBC Science', url: 'https://www.bbc.com/news/science_and_environment', feed: 'https://feeds.bbci.co.uk/news/science_and_environment/rss.xml' },
@@ -39,10 +58,22 @@ const NEWS_SOURCES = {
   health: [
     { name: 'BBC Health', url: 'https://www.bbc.com/news/health', feed: 'https://feeds.bbci.co.uk/news/health/rss.xml' },
   ],
-  entertainment: [
-    { name: 'BBC Entertainment', url: 'https://www.bbc.com/news/entertainment_and_arts', feed: 'https://feeds.bbci.co.uk/news/entertainment_and_arts/rss.xml' },
-    { name: 'Variety', url: 'https://variety.com', feed: 'https://variety.com/feed/' },
+  automobile: [
+    { name: 'Motor1', url: 'https://www.motor1.com', feed: 'https://www.motor1.com/rss/news/all/' },
+    { name: 'Autoblog', url: 'https://www.autoblog.com', feed: 'https://www.autoblog.com/rss.xml' }
   ],
+  travel: [
+    { name: 'Lonely Planet', url: 'https://www.lonelyplanet.com', feed: 'https://www.lonelyplanet.com/news/feed' }
+  ],
+  fashion: [
+    { name: 'Vogue', url: 'https://www.vogue.com', feed: 'https://www.vogue.com/feed/rss' }
+  ],
+  education: [
+    { name: 'Chronicle of Higher Ed', url: 'https://www.chronicle.com', feed: 'https://www.chronicle.com/rss' }
+  ],
+  miscellaneous: [
+    { name: 'HuffPost Weird News', url: 'https://www.huffpost.com/weird-news', feed: 'https://www.huffpost.com/section/weird-news/feed' }
+  ]
 }
 
 // ─── Region Configurations ───────────────────────────────────────────
@@ -518,7 +549,9 @@ function App() {
       // Fetch all feeds in parallel with timeout
       const fetchPromises = urlsToFetch.map(async ({ url, name, category }) => {
         try {
-          const proxyUrl = `${PROXY_URL}${encodeURIComponent(url)}`
+          const separator = url.includes('?') ? '&' : '?'
+          const feedUrlWithBuster = `${url}${separator}_cb=${Date.now()}`
+          const proxyUrl = `${PROXY_URL}${encodeURIComponent(feedUrlWithBuster)}`
           const response = await fetch(proxyUrl, { signal: AbortSignal.timeout(5000) }) // 5s timeout per feed
           if (!response.ok) return []
           const text = await response.text()
@@ -791,9 +824,9 @@ Description: ${story.originalSummary}`
       </div>
 
       {/* Footer */}
-      <footer className="shrink-0 py-2.5 border-t border-white/5 bg-gray-950/90 text-center z-10">
-        <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">
-          Powered by BBC News, Reuters, Al Jazeera & more • Real-time RSS feeds
+      <footer className="shrink-0 py-2.5 px-4 border-t border-white/5 bg-gray-950/90 text-center z-10">
+        <p className="text-[8px] font-medium text-gray-500 max-w-xl mx-auto leading-normal uppercase tracking-wider">
+          This application is a demo RSS feed aggregator. We do not claim any copyright or legal ownership over the articles, images, or content aggregated from external sources.
         </p>
       </footer>
     </div>
