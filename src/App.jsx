@@ -77,15 +77,19 @@ const NEWS_SOURCES = {
 }
 
 // ─── Region Configurations ───────────────────────────────────────────
-const REGIONS = [
-  { id: 'global', label: 'Global / Worldwide', icon: '🌍' },
-  { id: 'us', label: 'North America', icon: '🇺🇸' },
-  { id: 'europe', label: 'Europe / UK', icon: '🇪🇺' },
-  { id: 'apac', label: 'Asia-Pacific', icon: '🌏' },
-  { id: 'me', label: 'Middle East', icon: '🕌' }
+// ─── Granular Country Configurations ─────────────────────────────────
+const COUNTRIES = [
+  { id: 'global', label: 'Global (All)', icon: '🌍' },
+  { id: 'us', label: 'United States', icon: '🇺🇸' },
+  { id: 'gb', label: 'United Kingdom', icon: '🇬🇧' },
+  { id: 'in', label: 'India', icon: '🇮🇳' },
+  { id: 'ca', label: 'Canada', icon: '🇨🇦' },
+  { id: 'au', label: 'Australia', icon: '🇦🇺' },
+  { id: 'de', label: 'Germany', icon: '🇩🇪' },
+  { id: 'sg', label: 'Singapore', icon: '🇸🇬' }
 ]
 
-const REGION_WORLD_FEEDS = {
+const COUNTRY_WORLD_FEEDS = {
   global: [
     { name: 'BBC World', feed: 'https://feeds.bbci.co.uk/news/world/rss.xml' },
     { name: 'Reuters World', feed: 'https://www.reutersagency.com/feed/?best-topics=news&utm_term=global' },
@@ -93,22 +97,31 @@ const REGION_WORLD_FEEDS = {
   ],
   us: [
     { name: 'CNN Top News', feed: 'https://rss.cnn.com/rss/cnn_topstories.rss' },
-    { name: 'Reuters US News', feed: 'https://www.reutersagency.com/feed/?best-topics=news' },
+    { name: 'USA Today', feed: 'https://rssfeeds.usatoday.com/usatoday-NewsTopStories' },
     { name: 'BBC US & Canada', feed: 'https://feeds.bbci.co.uk/news/world/us_and_canada/rss.xml' }
   ],
-  europe: [
+  gb: [
     { name: 'BBC UK News', feed: 'https://feeds.bbci.co.uk/news/rss.xml' },
-    { name: 'Reuters UK', feed: 'https://www.reutersagency.com/feed/?best-topics=news' },
-    { name: 'Deutsche Welle', feed: 'https://rss.dw.com/rdf/rss-en-all' }
+    { name: 'Sky News UK', feed: 'https://news.sky.com/info/rss' },
+    { name: 'Reuters UK', feed: 'https://www.reutersagency.com/feed/?best-topics=news' }
   ],
-  apac: [
-    { name: 'Channel News Asia', feed: 'https://www.channelnewsasia.com/rss/cna/news.xml' },
-    { name: 'Reuters Asia', feed: 'https://www.reutersagency.com/feed/?best-topics=news' },
-    { name: 'BBC Asia News', feed: 'https://feeds.bbci.co.uk/news/world/asia/rss.xml' }
+  in: [
+    { name: 'NDTV India', feed: 'https://feeds.feedburner.com/ndtvnews-top-stories' },
+    { name: 'Times of India', feed: 'https://timesofindia.indiatimes.com/rssfeedstopstories.cms' }
   ],
-  me: [
-    { name: 'Al Jazeera English', feed: 'https://www.aljazeera.com/xml/rss/all.xml' },
-    { name: 'BBC Middle East', feed: 'https://feeds.bbci.co.uk/news/world/middle_east/rss.xml' }
+  ca: [
+    { name: 'CBC News Canada', feed: 'https://www.cbc.ca/cctoc/blogs/rss-feed' },
+    { name: 'Global News Canada', feed: 'https://globalnews.ca/feed/' }
+  ],
+  au: [
+    { name: 'ABC News Australia', feed: 'https://www.abc.net.au/news/feed/51120/rss.xml' },
+    { name: 'SBS News Australia', feed: 'https://www.sbs.com.au/news/feed' }
+  ],
+  de: [
+    { name: 'DW News Germany', feed: 'https://rss.dw.com/rdf/rss-en-all' }
+  ],
+  sg: [
+    { name: 'Channel News Asia', feed: 'https://www.channelnewsasia.com/rss/cna/news.xml' }
   ]
 }
 
@@ -152,6 +165,52 @@ function ShareButton({ headline, summary, link }) {
 // ─── News Card ──────────────────────────────────────────────────────
 function NewsCard({ story }) {
   const catInfo = CATEGORIES.find(c => c.id === story.category) || CATEGORIES[0]
+  const [isNarrating, setIsNarrating] = useState(false)
+  const utteranceRef = useRef(null)
+
+  const toggleNarration = (e) => {
+    e.stopPropagation()
+    e.preventDefault()
+    
+    if (isNarrating) {
+      window.speechSynthesis.cancel()
+      setIsNarrating(false)
+    } else {
+      window.speechSynthesis.cancel() // Stop any running speech first
+      
+      const textToRead = `${story.headline}. ${story.summary}`
+      const utterance = new SpeechSynthesisUtterance(textToRead)
+      
+      // Select a natural sounding English voice if available
+      const voices = window.speechSynthesis.getVoices()
+      const preferredVoice = voices.find(v => v.lang.startsWith('en') && (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Samantha')))
+      if (preferredVoice) {
+        utterance.voice = preferredVoice
+      }
+      
+      utterance.rate = 1.05 // Slightly faster reading speed
+      
+      utterance.onend = () => {
+        setIsNarrating(false)
+      }
+      
+      utterance.onerror = () => {
+        setIsNarrating(false)
+      }
+      
+      utteranceRef.current = utterance
+      setIsNarrating(true)
+      window.speechSynthesis.speak(utterance)
+    }
+  }
+
+  useEffect(() => {
+    return () => {
+      if (isNarrating) {
+        window.speechSynthesis.cancel()
+      }
+    }
+  }, [isNarrating])
 
   return (
     <article className={`relative bg-gradient-to-br ${catInfo.color} h-full w-full flex flex-col justify-between p-6 rounded-2xl border border-white/10 overflow-hidden shadow-2xl group`}>
@@ -165,10 +224,36 @@ function NewsCard({ story }) {
       <div className="relative z-10 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <span className="text-2xl drop-shadow-lg">{catInfo.icon}</span>
-          <div className="h-4 w-px bg-white/20" />
-          <span className="font-bold text-base text-white/95 tracking-wide uppercase">{story.source}</span>
         </div>
-        <ShareButton headline={story.headline} summary={story.summary} link={story.link} />
+        
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={toggleNarration}
+            className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full border backdrop-blur-md transition-all active:scale-95 ${
+              isNarrating 
+                ? 'bg-red-500/25 border-red-500/40 text-red-200' 
+                : 'bg-white/5 border-white/10 hover:bg-white/10 text-white/80 hover:text-white'
+            }`}
+          >
+            {isNarrating ? (
+              <>
+                <div className="flex gap-0.5 items-center justify-center h-3 w-3">
+                  <span className="w-[1.5px] h-2.5 bg-red-400 animate-bounce [animation-duration:0.6s]" />
+                  <span className="w-[1.5px] h-1.5 bg-red-400 animate-bounce [animation-duration:0.8s]" />
+                  <span className="w-[1.5px] h-3 bg-red-400 animate-bounce [animation-duration:0.5s]" />
+                </div>
+                <span>Stop</span>
+              </>
+            ) : (
+              <>
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" /></svg>
+                <span>Listen</span>
+              </>
+            )}
+          </button>
+          
+          <ShareButton headline={story.headline} summary={story.summary} link={story.link} />
+        </div>
       </div>
 
       {/* Main Content Area (Headline + Summary) */}
@@ -221,43 +306,117 @@ function SkeletonCard() {
   )
 }
 
+// ─── Accent Themes Configurations ────────────────────────────────────
+const THEMES = [
+  { 
+    id: 'violet', 
+    label: 'Vibrant Violet', 
+    icon: '💜', 
+    color: 'from-violet-600 to-indigo-600', 
+    text: 'text-purple-400', 
+    glow: 'shadow-purple-500/30', 
+    logo: 'from-violet-500 via-purple-500 to-indigo-600', 
+    logoText: 'from-violet-400 via-purple-400 to-indigo-400',
+    border: 'border-purple-500/40 bg-purple-500/10 text-purple-200' 
+  },
+  { 
+    id: 'emerald', 
+    label: 'Emerald Tactical', 
+    icon: '💚', 
+    color: 'from-emerald-600 to-teal-600', 
+    text: 'text-emerald-400', 
+    glow: 'shadow-emerald-500/30', 
+    logo: 'from-emerald-500 via-teal-500 to-green-600', 
+    logoText: 'from-emerald-400 via-teal-400 to-green-400',
+    border: 'border-emerald-500/40 bg-emerald-500/10 text-emerald-200' 
+  },
+  { 
+    id: 'cyan', 
+    label: 'Cyberpunk Cyan', 
+    icon: '💙', 
+    color: 'from-cyan-600 to-blue-600', 
+    text: 'text-cyan-400', 
+    glow: 'shadow-cyan-500/30', 
+    logo: 'from-cyan-500 via-blue-500 to-indigo-600', 
+    logoText: 'from-cyan-400 via-blue-400 to-indigo-400',
+    border: 'border-cyan-500/40 bg-cyan-500/10 text-cyan-200' 
+  },
+  { 
+    id: 'amber', 
+    label: 'Amber Tactical', 
+    icon: '🧡', 
+    color: 'from-amber-600 to-orange-600', 
+    text: 'text-amber-400', 
+    glow: 'shadow-amber-500/30', 
+    logo: 'from-amber-500 via-orange-500 to-red-600', 
+    logoText: 'from-amber-400 via-orange-400 to-red-400',
+    border: 'border-amber-500/40 bg-amber-500/10 text-amber-200' 
+  }
+]
+
 // ─── Explore Page ────────────────────────────────────────────────────
 function ExplorePage({ 
-  onSelectCategory, 
-  selectedCategory,
   userInterests,
   setUserInterests,
-  userLocation,
-  setUserLocation
+  userCountry,
+  setUserCountry,
+  appTheme,
+  setAppTheme
 }) {
-  const [tempInterests, setTempInterests] = useState(userInterests)
-  const [tempLocation, setTempLocation] = useState(userLocation)
+  const [tempCountry, setTempCountry] = useState(userCountry)
+  const [tempTheme, setTempTheme] = useState(appTheme)
   const [saveStatus, setSaveStatus] = useState('') // '' | 'saving' | 'saved'
 
-  // Update temp state if props change
+  // Sync state with props
   useEffect(() => {
-    setTempInterests(userInterests)
-    setTempLocation(userLocation)
-  }, [userInterests, userLocation])
+    setTempCountry(userCountry)
+    setTempTheme(appTheme)
+  }, [userCountry, appTheme])
 
-  const toggleInterest = (id) => {
-    if (tempInterests.includes(id)) {
-      setTempInterests(tempInterests.filter(x => x !== id))
+  // Play subtle visual audio feedback click chime
+  const playClickChime = () => {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)()
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+      osc.connect(gain)
+      gain.connect(ctx.destination)
+      osc.frequency.setValueAtTime(659.25, ctx.currentTime) // E5
+      gain.gain.setValueAtTime(0.015, ctx.currentTime)
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.1)
+      osc.start()
+      osc.stop(ctx.currentTime + 0.1)
+    } catch (e) {}
+  }
+
+  const handleToggleCategory = (id) => {
+    playClickChime()
+    let updated = []
+    
+    if (id === 'all') {
+      updated = [] // Selects all news (clears filter)
     } else {
-      setTempInterests([...tempInterests, id])
+      if (userInterests.includes(id)) {
+        updated = userInterests.filter(x => x !== id)
+      } else {
+        updated = [...userInterests, id]
+      }
     }
+    
+    setUserInterests(updated)
+    localStorage.setItem('NEWS_USER_INTERESTS', JSON.stringify(updated))
   }
 
   const handleSave = () => {
     setSaveStatus('saving')
     setTimeout(() => {
-      setUserInterests(tempInterests)
-      setUserLocation(tempLocation)
-      localStorage.setItem('NEWS_USER_INTERESTS', JSON.stringify(tempInterests))
-      localStorage.setItem('NEWS_USER_LOCATION', tempLocation)
+      setUserCountry(tempCountry)
+      setAppTheme(tempTheme)
+      localStorage.setItem('NEWS_USER_COUNTRY', tempCountry)
+      localStorage.setItem('NEWS_APP_THEME', tempTheme)
       setSaveStatus('saved')
 
-      // Synthesized success audio ping
+      // Synthesized success audio double-ping
       try {
         const ctx = new (window.AudioContext || window.webkitAudioContext)()
         const osc = ctx.createOscillator()
@@ -266,7 +425,7 @@ function ExplorePage({
         gain.connect(ctx.destination)
         osc.frequency.setValueAtTime(587.33, ctx.currentTime) // D5
         osc.frequency.setValueAtTime(880, ctx.currentTime + 0.08) // A5
-        gain.gain.setValueAtTime(0.04, ctx.currentTime)
+        gain.gain.setValueAtTime(0.03, ctx.currentTime)
         gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.25)
         osc.start()
         osc.stop(ctx.currentTime + 0.25)
@@ -276,102 +435,104 @@ function ExplorePage({
     }, 600)
   }
 
+  const activeTheme = THEMES.find(t => t.id === tempTheme) || THEMES[0]
+
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8 space-y-8 overflow-y-auto pb-24">
-      {/* Quick Filter Section */}
+    <div className="max-w-2xl mx-auto px-4 py-6 space-y-6 overflow-y-auto pb-24">
+      {/* Dynamic Filter Section */}
       <div className="bg-white/5 border border-white/10 rounded-2xl p-5 shadow-xl">
-        <h2 className="text-lg font-bold text-white mb-1 flex items-center gap-2">
-          <span>🔍</span> Quick Category Filter
+        <h2 className="text-base font-extrabold text-white mb-1 flex items-center gap-2">
+          <span>🔍</span> Curated Topic Interests
         </h2>
-        <p className="text-xs text-gray-400 mb-4">Tap a topic to jump straight to its live feed</p>
+        <p className="text-[11px] text-gray-400 mb-4">Toggle topics to build your custom feed. Select "All News" to read everything.</p>
         
         <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
-          {CATEGORIES.map(cat => (
-            <button
-              key={`filter-${cat.id}`}
-              onClick={() => onSelectCategory(cat.id)}
-              className={`p-3.5 rounded-xl border transition-all duration-300 text-center relative ${
-                selectedCategory === cat.id
-                  ? `border-transparent bg-gradient-to-br ${cat.color} text-white shadow-lg scale-[1.03] ring-1 ring-white/20`
-                  : 'border-white/5 bg-gray-900/40 hover:bg-gray-800/40 hover:border-white/10 text-gray-300'
-              }`}
-            >
-              <span className="text-2xl block mb-1">{cat.icon}</span>
-              <span className="font-bold text-[10px] uppercase tracking-wider">{cat.label}</span>
-            </button>
-          ))}
+          {CATEGORIES.map(cat => {
+            const isActive = cat.id === 'all' 
+              ? userInterests.length === 0 
+              : userInterests.includes(cat.id)
+              
+            return (
+              <button
+                key={`filter-${cat.id}`}
+                onClick={() => handleToggleCategory(cat.id)}
+                className={`p-3 rounded-xl border transition-all duration-200 text-center relative active:scale-95 ${
+                  isActive
+                    ? `border-transparent bg-gradient-to-br ${cat.color} text-white shadow-lg scale-[1.02] ring-1 ring-white/10`
+                    : 'border-white/5 bg-gray-900/40 hover:bg-gray-800/40 hover:border-white/10 text-gray-400 hover:text-gray-300'
+                }`}
+              >
+                {/* Active check indicator dots */}
+                {isActive && cat.id !== 'all' && (
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-white shadow animate-pulse" />
+                )}
+                <span className="text-xl block mb-0.5">{cat.icon}</span>
+                <span className="font-bold text-[9px] uppercase tracking-wider">{cat.label}</span>
+              </button>
+            )
+          })}
         </div>
       </div>
 
       {/* Profile & Personalization Center */}
-      <div className="bg-white/5 border border-white/10 rounded-2xl p-5 shadow-xl space-y-6">
-        <div className="border-b border-white/10 pb-4">
-          <h2 className="text-lg font-bold text-white mb-1 flex items-center gap-2">
+      <div className="bg-white/5 border border-white/10 rounded-2xl p-5 shadow-xl space-y-5">
+        <div className="border-b border-white/10 pb-3.5">
+          <h2 className="text-base font-extrabold text-white mb-1 flex items-center gap-2">
             <span>⚙️</span> Personalization Center
           </h2>
-          <p className="text-xs text-gray-400">Configure your interests and preferred region to curate your custom feed</p>
+          <p className="text-[11px] text-gray-400">Configure your preference location and visual dashboard color accents</p>
         </div>
 
-        {/* Interests Selector */}
-        <div className="space-y-3">
-          <h3 className="text-sm font-bold text-gray-300 uppercase tracking-widest flex items-center gap-1.5">
-            <span>🎨</span> Custom Interests
+        {/* Country Selector */}
+        <div className="space-y-2.5">
+          <h3 className="text-xs font-bold text-gray-300 uppercase tracking-widest flex items-center gap-1.5">
+            <span>📍</span> Preferred Country / Source Location
           </h3>
-          <p className="text-[11px] text-gray-500">Only check the topics you want in your personal Feed. Leave blank to show all news.</p>
-          
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-            {CATEGORIES.filter(c => c.id !== 'all').map(cat => {
-              const isSelected = tempInterests.includes(cat.id)
+          <p className="text-[10px] text-gray-500">Loads customized local intelligence feeds for the World News sector</p>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {COUNTRIES.map(c => {
+              const isSelected = tempCountry === c.id
               return (
                 <button
-                  key={`pref-${cat.id}`}
-                  onClick={() => toggleInterest(cat.id)}
-                  className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${
+                  key={c.id}
+                  onClick={() => setTempCountry(c.id)}
+                  className={`flex items-center gap-2 p-2.5 rounded-xl border text-left transition-all active:scale-95 ${
                     isSelected
-                      ? 'border-purple-500/40 bg-purple-500/10 text-purple-200 shadow-md'
-                      : 'border-white/5 bg-gray-900/20 hover:bg-gray-800/30 text-gray-400 hover:text-gray-300'
+                      ? `border-transparent bg-gradient-to-r ${activeTheme.color} text-white shadow-md`
+                      : 'border-white/5 bg-gray-900/25 hover:bg-gray-800/30 text-gray-400 hover:text-gray-300'
                   }`}
                 >
-                  <span className="text-lg">{cat.icon}</span>
-                  <span className="font-semibold text-xs tracking-wide">{cat.label}</span>
-                  <div className="ml-auto w-4.5 h-4.5 rounded-full border flex items-center justify-center transition-all">
-                    {isSelected && (
-                      <div className="w-2.5 h-2.5 rounded-full bg-purple-400" />
-                    )}
-                  </div>
+                  <span className="text-base">{c.icon}</span>
+                  <span className="font-bold text-[10px] uppercase tracking-wider truncate">{c.label}</span>
                 </button>
               )
             })}
           </div>
         </div>
 
-        {/* Location / Region Selector */}
-        <div className="space-y-3 pt-2">
-          <h3 className="text-sm font-bold text-gray-300 uppercase tracking-widest flex items-center gap-1.5">
-            <span>📍</span> Preferred Region (Location)
+        {/* Dynamic App Theme selector */}
+        <div className="space-y-2.5 pt-1.5">
+          <h3 className="text-xs font-bold text-gray-300 uppercase tracking-widest flex items-center gap-1.5">
+            <span>🎨</span> Ambient Accent Theme
           </h3>
-          <p className="text-[11px] text-gray-500">Tailors the sources loaded for the World News sector</p>
+          <p className="text-[10px] text-gray-500">Adjust the color scheme of headers, navigation tabs, buttons, and animations</p>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-            {REGIONS.map(reg => {
-              const isSelected = tempLocation === reg.id
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {THEMES.map(themeOpt => {
+              const isSelected = tempTheme === themeOpt.id
               return (
                 <button
-                  key={reg.id}
-                  onClick={() => setTempLocation(reg.id)}
-                  className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${
+                  key={themeOpt.id}
+                  onClick={() => setTempTheme(themeOpt.id)}
+                  className={`flex items-center gap-2 p-2.5 rounded-xl border text-left transition-all active:scale-95 ${
                     isSelected
-                      ? 'border-violet-500/40 bg-violet-500/10 text-violet-200 shadow-md'
-                      : 'border-white/5 bg-gray-900/20 hover:bg-gray-800/30 text-gray-400 hover:text-gray-300'
+                      ? `${themeOpt.border} border shadow-md`
+                      : 'border-white/5 bg-gray-900/25 hover:bg-gray-800/30 text-gray-400 hover:text-gray-300'
                   }`}
                 >
-                  <span className="text-lg">{reg.icon}</span>
-                  <span className="font-semibold text-xs tracking-wide">{reg.label}</span>
-                  <div className="ml-auto w-4.5 h-4.5 rounded-full border flex items-center justify-center transition-all">
-                    {isSelected && (
-                      <div className="w-2.5 h-2.5 rounded-full bg-violet-400" />
-                    )}
-                  </div>
+                  <span className="text-base">{themeOpt.icon}</span>
+                  <span className="font-bold text-[10px] uppercase tracking-wider truncate">{themeOpt.label}</span>
                 </button>
               )
             })}
@@ -379,33 +540,27 @@ function ExplorePage({
         </div>
 
         {/* Save CTA */}
-        <div className="pt-4 border-t border-white/10 flex justify-end">
+        <div className="pt-3 border-t border-white/10 flex justify-end">
           <button
             onClick={handleSave}
             disabled={saveStatus === 'saving'}
-            className={`w-full sm:w-auto px-6 py-3 rounded-xl font-bold text-xs uppercase tracking-wider transition-all shadow-lg active:scale-95 ${
+            className={`w-full sm:w-auto px-5 py-2.5 rounded-xl font-bold text-[10px] uppercase tracking-wider transition-all shadow-lg active:scale-95 ${
               saveStatus === 'saved'
                 ? 'bg-green-600 hover:bg-green-550 text-white shadow-green-900/20'
                 : saveStatus === 'saving'
-                ? 'bg-purple-600/50 text-purple-300 cursor-not-allowed'
-                : 'bg-gradient-to-r from-violet-600 to-indigo-650 hover:from-violet-500 hover:to-indigo-500 text-white'
+                ? 'bg-purple-650/45 text-purple-300 cursor-not-allowed'
+                : `bg-gradient-to-r ${activeTheme.color} hover:opacity-90 text-white`
             }`}
           >
-            {saveStatus === 'saved' ? (
-              <span className="flex items-center justify-center gap-2">
-                <span>Preferences Saved!</span>
-                <span>✨</span>
+            {saveStatus === 'saving' ? (
+              <span className="flex items-center gap-1 justify-center">
+                <svg className="animate-spin h-3.5 h-3.5" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" /></svg>
+                Saving...
               </span>
-            ) : saveStatus === 'saving' ? (
-              <span className="flex items-center justify-center gap-2">
-                <svg className="animate-spin h-4 w-4 text-purple-200" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                </svg>
-                <span>Saving...</span>
-              </span>
+            ) : saveStatus === 'saved' ? (
+              'Preferences Saved! ✨'
             ) : (
-              <span>Save Preferences</span>
+              'Save Preferences'
             )}
           </button>
         </div>
@@ -594,8 +749,11 @@ function App() {
       return []
     }
   })
-  const [userLocation, setUserLocation] = useState(() => {
-    return localStorage.getItem('NEWS_USER_LOCATION') || 'global'
+  const [userCountry, setUserCountry] = useState(() => {
+    return localStorage.getItem('NEWS_USER_COUNTRY') || 'global'
+  })
+  const [appTheme, setAppTheme] = useState(() => {
+    return localStorage.getItem('NEWS_APP_THEME') || 'violet'
   })
 
   // Parse RSS or Atom XML to stories
@@ -679,7 +837,7 @@ function App() {
     
     try {
       let urlsToFetch = []
-      const activeWorldFeeds = REGION_WORLD_FEEDS[userLocation] || REGION_WORLD_FEEDS.global
+      const activeWorldFeeds = COUNTRY_WORLD_FEEDS[userCountry] || COUNTRY_WORLD_FEEDS.global
       
       if (selectedCategory === 'all') {
         // Fetch all category feeds, replacing world category with regional feeds
@@ -771,7 +929,7 @@ function App() {
     } finally {
       setLoading(false)
     }
-  }, [selectedCategory, userLocation, userInterests, parseRSSFeed])
+  }, [selectedCategory, userCountry, userInterests, parseRSSFeed])
 
   // Load stories on mount or category change
   useEffect(() => {
@@ -916,6 +1074,8 @@ Description: ${story.originalSummary}`
     setPage(0)
   }
 
+  const activeTheme = THEMES.find(t => t.id === appTheme) || THEMES[0]
+
   return (
     <div className="h-screen w-screen overflow-hidden flex flex-col bg-gradient-to-b from-gray-950 via-slate-950 to-black select-none">
       {/* Header */}
@@ -924,17 +1084,17 @@ Description: ${story.originalSummary}`
           <div className="flex items-center justify-between mb-3">
             {/* Logo */}
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-violet-500 via-purple-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/30 ring-1 ring-white/20">
+              <div className={`w-10 h-10 bg-gradient-to-br ${activeTheme.logo} rounded-xl flex items-center justify-center shadow-lg ${activeTheme.glow} ring-1 ring-white/20`}>
                 <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
               </div>
               <div>
-                <h1 className="text-xl font-extrabold bg-gradient-to-r from-violet-400 via-purple-400 to-indigo-400 bg-clip-text text-transparent tracking-tight">NewsPulse</h1>
+                <h1 className={`text-xl font-extrabold bg-gradient-to-r ${activeTheme.logoText} bg-clip-text text-transparent tracking-tight`}>NewsPulse</h1>
                 <p className="text-[10px] font-medium text-gray-500 uppercase tracking-widest">Real News, In Brief</p>
               </div>
             </div>
 
             {/* Refresh */}
-            <button onClick={handleRefresh} disabled={refreshing} className={`flex items-center gap-2 px-3 py-2 rounded-xl font-medium text-sm transition-all ${refreshing ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30' : 'bg-white/5 hover:bg-purple-500/10 text-gray-400 hover:text-purple-400 border border-white/10 active:scale-95'}`}>
+            <button onClick={handleRefresh} disabled={refreshing} className={`flex items-center gap-2 px-3 py-2 rounded-xl font-medium text-sm transition-all ${refreshing ? 'bg-white/5 text-gray-500 border border-white/5' : 'bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white border border-white/10 active:scale-95'}`}>
               <svg className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
               <span className="hidden sm:inline">{refreshing ? 'Refreshing...' : 'Refresh'}</span>
             </button>
@@ -942,11 +1102,11 @@ Description: ${story.originalSummary}`
 
           {/* Tab Navigation */}
           <nav className="flex gap-1 bg-white/5 p-1 rounded-xl border border-white/10">
-            <button onClick={() => { setActiveTab('feed'); setPage(0) }} className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold transition-all ${activeTab === 'feed' ? 'bg-white/10 text-purple-400 shadow-sm border border-white/10' : 'text-gray-500 hover:text-gray-300'}`}>
+            <button onClick={() => { setActiveTab('feed'); setPage(0) }} className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold transition-all ${activeTab === 'feed' ? `bg-white/10 ${activeTheme.text} shadow-sm border border-white/10` : 'text-gray-500 hover:text-gray-300'}`}>
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" /></svg>
               Feed
             </button>
-            <button onClick={() => setActiveTab('explore')} className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold transition-all ${activeTab === 'explore' ? 'bg-white/10 text-purple-400 shadow-sm border border-white/10' : 'text-gray-500 hover:text-gray-300'}`}>
+            <button onClick={() => setActiveTab('explore')} className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold transition-all ${activeTab === 'explore' ? `bg-white/10 ${activeTheme.text} shadow-sm border border-white/10` : 'text-gray-500 hover:text-gray-300'}`}>
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
               Explore
             </button>
@@ -959,23 +1119,30 @@ Description: ${story.originalSummary}`
         {activeTab === 'explore' ? (
           <div className="h-full w-full overflow-y-auto no-scrollbar">
             <ExplorePage 
-              onSelectCategory={handleExploreSelect} 
-              selectedCategory={selectedCategory} 
               userInterests={userInterests}
               setUserInterests={setUserInterests}
-              userLocation={userLocation}
-              setUserLocation={setUserLocation}
+              userCountry={userCountry}
+              setUserCountry={setUserCountry}
+              appTheme={appTheme}
+              setAppTheme={setAppTheme}
             />
           </div>
         ) : (
           <div className="h-full w-full max-w-2xl mx-auto px-4 py-2 flex flex-col overflow-hidden">
             {/* Active filter badge */}
-            {selectedCategory !== 'all' && (
-              <div className="flex items-center gap-2 mb-2 shrink-0">
-                <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border ${CATEGORIES.find(c => c.id === selectedCategory)?.bg}`}>
-                  {CATEGORIES.find(c => c.id === selectedCategory)?.icon} {CATEGORIES.find(c => c.id === selectedCategory)?.label}
-                </span>
-                <button onClick={() => handleExploreSelect('all')} className="text-xs text-gray-500 hover:text-red-400 transition-colors">Clear filter</button>
+            {userInterests.length > 0 && (
+              <div className="flex items-center gap-2 mb-2 shrink-0 overflow-x-auto no-scrollbar py-0.5">
+                <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Filtered Feed:</span>
+                {userInterests.map(interestId => {
+                  const cat = CATEGORIES.find(c => c.id === interestId)
+                  if (!cat) return null
+                  return (
+                    <span key={interestId} className={`inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full border ${cat.bg}`}>
+                      {cat.icon} {cat.label}
+                    </span>
+                  )
+                })}
+                <button onClick={() => { setUserInterests([]); localStorage.setItem('NEWS_USER_INTERESTS', '[]') }} className="text-[10px] font-bold text-red-500 hover:text-red-400 uppercase tracking-wider transition-colors ml-auto shrink-0">Clear</button>
               </div>
             )}
 
@@ -1000,7 +1167,7 @@ Description: ${story.originalSummary}`
                   <svg className="w-16 h-16 mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
                   <p className="text-lg font-semibold mb-2">No stories found</p>
                   <p className="text-sm text-gray-500 mb-4">Check your internet connection and try again</p>
-                  <button onClick={handleRefresh} className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg font-medium transition-colors">Retry</button>
+                  <button onClick={handleRefresh} className={`px-4 py-2 bg-gradient-to-r ${activeTheme.color} hover:opacity-90 rounded-lg font-bold transition-colors`}>Retry</button>
                 </div>
               )}
 
