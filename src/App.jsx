@@ -227,40 +227,160 @@ function ShareButton({ headline, summary, link }) {
 }
 
 // ─── News Card ──────────────────────────────────────────────────────
-function NewsCard({ story }) {
+function NewsCard({ story, appTheme = 'violet' }) {
   const catInfo = CATEGORIES.find(c => c.id === story.category) || CATEGORIES[0]
+  const [cardLang, setCardLang] = useState('en')
+  const [translating, setTranslating] = useState(false)
+  const [modalOpen, setModalOpen] = useState(false)
+  
   const [isNarrating, setIsNarrating] = useState(false)
   const utteranceRef = useRef(null)
 
+  const activeTheme = THEMES.find(t => t.id === appTheme) || THEMES[0]
+
+  const handleTranslate = async (targetLang) => {
+    if (targetLang === 'en') {
+      if (isNarrating) {
+        window.speechSynthesis.cancel()
+        setIsNarrating(false)
+      }
+      setCardLang('en')
+      return
+    }
+    if (story.hindiSummary) {
+      if (isNarrating) {
+        window.speechSynthesis.cancel()
+        setIsNarrating(false)
+      }
+      setCardLang('hi')
+      return
+    }
+
+    setTranslating(true)
+    try {
+      const prompt = `Translate and rewrite the following news article title and description. You must return a JSON object with keys "headline" (English headline), "summary" (English detailed 4-5 sentence summary), "extendedSummary" (an array of 3 detailed English bullet points with statistics/figures), "hindiHeadline" (Hindi translation of the headline), "hindiSummary" (Hindi translation of the summary), and "hindiExtendedSummary" (an array of 3 detailed Hindi bullet points of the extended summary). Do not include any other text, markdown, or code blocks. Just raw JSON.
+Title: ${story.originalHeadline}
+Description: ${story.originalSummary}`
+
+      const response = await fetch('https://devtoolbox-api.devtoolbox-api.workers.dev/ai/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt })
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        if (data && data.response) {
+          let parsed = null
+          if (typeof data.response === 'object' && data.response !== null) {
+            parsed = data.response
+          } else {
+            try { parsed = JSON.parse(data.response.trim()) } catch (e) {}
+          }
+          if (parsed && parsed.hindiSummary) {
+            // Update in-place properties (modifying active props)
+            story.hindiHeadline = parsed.hindiHeadline
+            story.hindiSummary = parsed.hindiSummary
+            story.hindiExtendedSummary = parsed.hindiExtendedSummary
+            story.extendedSummary = parsed.extendedSummary || []
+
+            // Save to cache
+            try {
+              const cache = JSON.parse(localStorage.getItem('AI_STORIES_CACHE') || '{}')
+              cache[story.link] = {
+                ...cache[story.link],
+                headline: parsed.headline || story.headline,
+                summary: parsed.summary || story.summary,
+                extendedSummary: parsed.extendedSummary || [],
+                hindiHeadline: parsed.hindiHeadline,
+                hindiSummary: parsed.hindiSummary,
+                hindiExtendedSummary: parsed.hindiExtendedSummary
+              }
+              localStorage.setItem('AI_STORIES_CACHE', JSON.stringify(cache))
+            } catch (e) {}
+
+            if (isNarrating) {
+              window.speechSynthesis.cancel()
+              setIsNarrating(false)
+            }
+            setCardLang('hi')
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("Translation failed:", e)
+    } finally {
+      setTranslating(false)
+    }
+  }
+
+  const getBulletPoints = () => {
+    const list = cardLang === 'hi' ? story.hindiExtendedSummary : story.extendedSummary
+    if (list && list.length > 0) return list
+
+    // Extract sentences from summary as default bullets
+    const text = cardLang === 'hi' ? (story.hindiSummary || story.summary) : story.summary
+    const parts = text.split(/[.।]/).map(s => s.trim()).filter(s => s.length > 10)
+    return parts.slice(0, 3).map(s => cardLang === 'hi' ? `${s}।` : `${s}.`)
+  }
+
   const toggleNarration = (e) => {
-    e.stopPropagation()
-    e.preventDefault()
-    
+    if (e) {
+      e.stopPropagation()
+      e.preventDefault()
+    }
+
     if (isNarrating) {
       window.speechSynthesis.cancel()
       setIsNarrating(false)
     } else {
       window.speechSynthesis.cancel() // Stop any running speech first
-      
-      const textToRead = `${story.headline}. ${story.summary}`
+
+      const headlineText = cardLang === 'hi' ? (story.hindiHeadline || story.headline) : story.headline
+      const bodyText = cardLang === 'hi' ? (story.hindiSummary || story.summary) : story.summary
+      const textToRead = `${headlineText}. ${bodyText}`
       const utterance = new SpeechSynthesisUtterance(textToRead)
-      
-      // Select a natural sounding English voice if available
+
+      // Select voice based on language toggle
       const voices = window.speechSynthesis.getVoices()
-      const preferredVoice = voices.find(v => v.lang.startsWith('en') && (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Samantha')))
+      const preferredVoice = voices.find(v => 
+        (cardLang === 'hi' ? v.lang.startsWith('hi') : v.lang.startsWith('en')) &&
+        (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Samantha') || v.name.includes('Microsoft'))
+      ) || voices.find(v => cardLang === 'hi' ? v.lang.startsWith('hi') : v.lang.startsWith('en'))
+      
       if (preferredVoice) {
         utterance.voice = preferredVoice
       }
+
+      utterance.rate = cardLang === 'hi' ? 0.95 : 1.05 // Adjust rate slightly for natural Hindi speed
+      utterance.onend = () => setIsNarrating(false)
+      utterance.onerror = () => setIsNarrating(false)
+
+      utteranceRef.current = utterance
+      setIsNarrating(true)
+      window.speechSynthesis.speak(utterance)
+    }
+  }
+
+  const toggleModalNarration = () => {
+    if (isNarrating) {
+      window.speechSynthesis.cancel()
+      setIsNarrating(false)
+    } else {
+      window.speechSynthesis.cancel()
+      const bullets = getBulletPoints().join(' ')
+      const utterance = new SpeechSynthesisUtterance(bullets)
       
-      utterance.rate = 1.05 // Slightly faster reading speed
+      const voices = window.speechSynthesis.getVoices()
+      const preferredVoice = voices.find(v => 
+        (cardLang === 'hi' ? v.lang.startsWith('hi') : v.lang.startsWith('en')) &&
+        (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Microsoft'))
+      ) || voices.find(v => cardLang === 'hi' ? v.lang.startsWith('hi') : v.lang.startsWith('en'))
       
-      utterance.onend = () => {
-        setIsNarrating(false)
-      }
-      
-      utterance.onerror = () => {
-        setIsNarrating(false)
-      }
+      if (preferredVoice) utterance.voice = preferredVoice
+      utterance.rate = cardLang === 'hi' ? 0.95 : 1.02
+      utterance.onend = () => setIsNarrating(false)
+      utterance.onerror = () => setIsNarrating(false)
       
       utteranceRef.current = utterance
       setIsNarrating(true)
@@ -276,6 +396,9 @@ function NewsCard({ story }) {
     }
   }, [isNarrating])
 
+  const activeHeadline = cardLang === 'hi' ? (story.hindiHeadline || story.headline) : story.headline
+  const activeSummary = cardLang === 'hi' ? (story.hindiSummary || story.summary) : story.summary
+
   return (
     <article className={`relative bg-gradient-to-br ${catInfo.color} h-full w-full flex flex-col justify-between p-6 rounded-2xl border border-white/10 overflow-hidden shadow-2xl group`}>
       {/* Ambient glow effects */}
@@ -290,7 +413,35 @@ function NewsCard({ story }) {
           <span className="text-2xl drop-shadow-lg">{catInfo.icon}</span>
         </div>
         
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
+          {/* Language Switcher Badge */}
+          <div className="flex items-center bg-black/35 rounded-full border border-white/15 p-0.5 shadow-inner">
+            <button
+              onClick={() => handleTranslate('en')}
+              disabled={translating}
+              className={`px-2.5 py-1 rounded-full text-[9px] font-bold uppercase transition-all ${
+                cardLang === 'en'
+                  ? `bg-white/15 text-white`
+                  : 'text-white/40 hover:text-white/75'
+              }`}
+            >
+              EN
+            </button>
+            <button
+              onClick={() => handleTranslate('hi')}
+              disabled={translating}
+              className={`px-2.5 py-1 rounded-full text-[9px] font-bold uppercase transition-all flex items-center gap-1 ${
+                cardLang === 'hi'
+                  ? `bg-white/15 text-white`
+                  : 'text-white/40 hover:text-white/75'
+              }`}
+            >
+              {translating ? (
+                <svg className="animate-spin h-2.5 w-2.5 text-white" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" /></svg>
+              ) : 'HI'}
+            </button>
+          </div>
+
           <button 
             onClick={toggleNarration}
             className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full border backdrop-blur-md transition-all active:scale-95 ${
@@ -316,7 +467,7 @@ function NewsCard({ story }) {
             )}
           </button>
           
-          <ShareButton headline={story.headline} summary={story.summary} link={story.link} />
+          <ShareButton headline={activeHeadline} summary={activeSummary} link={story.link} />
         </div>
       </div>
 
@@ -328,29 +479,123 @@ function NewsCard({ story }) {
         </span>
         
         <h2 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-white leading-tight drop-shadow-lg select-text">
-          {story.headline}
+          {activeHeadline}
         </h2>
         
         <p className="text-xs sm:text-sm text-white/85 leading-relaxed drop-shadow-md select-text line-clamp-none overflow-y-auto max-h-[160px] pr-1.5 no-scrollbar">
-          {story.summary}
+          {activeSummary}
         </p>
       </div>
 
       {/* Bottom CTA / Action */}
-      <div className="relative z-10 flex items-center justify-between pt-4 border-t border-white/10">
+      <div className="relative z-10 flex items-center justify-between gap-3 pt-4 border-t border-white/10">
+        <button
+          onClick={() => {
+            if (isNarrating) {
+              window.speechSynthesis.cancel()
+              setIsNarrating(false)
+            }
+            setModalOpen(true)
+          }}
+          className="flex-1 inline-flex items-center justify-center gap-1.5 text-xs font-bold text-white bg-white/5 hover:bg-white/10 active:scale-[0.97] transition-all border border-white/10 px-4 py-2.5 rounded-full shadow-md"
+        >
+          <span>📊 Key Briefing</span>
+        </button>
+
         <a 
           href={story.link} 
           target="_blank" 
           rel="noopener noreferrer" 
-          className="inline-flex items-center gap-2 text-sm font-bold text-white bg-gradient-to-r from-violet-600/80 to-indigo-600/80 hover:from-violet-500/90 hover:to-indigo-500/90 active:scale-[0.97] transition-all backdrop-blur-md border border-white/20 px-5 py-2.5 rounded-full shadow-lg shadow-purple-900/30"
+          className={`flex-1 inline-flex items-center justify-center gap-1.5 text-xs font-bold text-white bg-gradient-to-r ${activeTheme.color} hover:opacity-90 active:scale-[0.97] transition-all border border-white/20 px-4 py-2.5 rounded-full shadow-lg`}
         >
           <span>Read Full Story</span>
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
           </svg>
         </a>
-        <span className="text-xs text-white/40 font-semibold">{story.time}</span>
       </div>
+
+      {/* Factual Briefing Modal Overlay */}
+      {modalOpen && (
+        <div className="absolute inset-0 bg-black/90 backdrop-blur-md z-40 flex flex-col justify-end p-5 transition-all duration-300 animate-fade-in">
+          <div className="bg-slate-900/95 border border-white/10 rounded-2xl p-5 shadow-2xl space-y-4 max-h-[90%] overflow-y-auto w-full max-w-xl mx-auto flex flex-col justify-between">
+            <div className="space-y-3.5">
+              {/* Modal Header */}
+              <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">{catInfo.icon}</span>
+                  <span className="text-xs uppercase font-extrabold tracking-widest text-white/50">{cardLang === 'hi' ? 'तथ्यात्मक रिपोर्ट' : 'Factual Briefing'}</span>
+                </div>
+                
+                <button
+                  onClick={() => {
+                    if (isNarrating) {
+                      window.speechSynthesis.cancel()
+                      setIsNarrating(false)
+                    }
+                    setModalOpen(false)
+                  }}
+                  className="p-1.5 rounded-full hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
+                >
+                  <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+              </div>
+
+              {/* Headline */}
+              <h3 className="text-sm sm:text-base font-extrabold text-white leading-tight">
+                {activeHeadline}
+              </h3>
+
+              {/* Bullet Points */}
+              <div className="space-y-3.5 py-1.5">
+                {getBulletPoints().map((bullet, idx) => (
+                  <div key={idx} className="flex gap-2.5 text-xs text-white/80 leading-relaxed">
+                    <span className="text-emerald-400 font-bold">•</span>
+                    <p>{bullet.replace(/^[•\s]*/, '')}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="pt-4 border-t border-white/10 flex items-center justify-between gap-3">
+              <button
+                onClick={toggleModalNarration}
+                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold transition-all active:scale-95 ${
+                  isNarrating
+                    ? 'bg-red-500/25 border border-red-500/40 text-red-200'
+                    : 'bg-white/5 border border-white/10 hover:bg-white/10 text-white'
+                }`}
+              >
+                {isNarrating ? (
+                  <>
+                    <svg className="animate-spin h-3.5 w-3.5" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" /></svg>
+                    <span>{cardLang === 'hi' ? 'रोकें' : 'Stop Reading'}</span>
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" /></svg>
+                    <span>{cardLang === 'hi' ? 'रिपोर्ट सुनें' : 'Listen Briefing'}</span>
+                  </>
+                )}
+              </button>
+              
+              <button
+                onClick={() => {
+                  if (isNarrating) {
+                    window.speechSynthesis.cancel()
+                    setIsNarrating(false)
+                  }
+                  setModalOpen(false)
+                }}
+                className={`flex-1 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r ${activeTheme.color} hover:opacity-90 text-white shadow-lg`}
+              >
+                {cardLang === 'hi' ? 'बंद करें' : 'Got it'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </article>
   )
 }
@@ -683,6 +928,18 @@ const FALLBACK_STORIES = [
     id: "fb-world-1",
     headline: "Global Trade Routes Shift as Ports Report Record Cargo Volumes",
     summary: "Major maritime trade hubs in Singapore and Rotterdam have reported a 12% year-on-year increase in shipping volume. Industry analysts attribute the surge to shifting supply chain strategies as manufacturers seek closer-to-home logistics routes. The cargo congestion is expected to ease by the third quarter of this fiscal year.",
+    extendedSummary: [
+      "Maritime trade volume in hubs Singapore and Rotterdam surged by 12% year-on-year.",
+      "Manufacturers are actively shifting supply chains to closer-to-home regional logistics networks.",
+      "Port cargo congestion is predicted to clear by Q3 of this fiscal year."
+    ],
+    hindiHeadline: "वैश्विक व्यापार मार्गों में बदलाव: बंदरगाहों पर रिकॉर्ड कार्गो वॉल्यूम दर्ज",
+    hindiSummary: "सिंगापुर और रॉटरडैम के प्रमुख समुद्री व्यापार केंद्रों ने शिपिंग वॉल्यूम में 12% की वार्षिक वृद्धि दर्ज की है। उद्योग विश्लेषकों का कहना है कि यह वृद्धि निर्माताओं द्वारा घरेलू रसद मार्गों की खोज के कारण हो रही है। चालू वित्त वर्ष की तीसरी तिमाही तक बंदरगाहों पर भीड़ कम होने की उम्मीद है।",
+    hindiExtendedSummary: [
+      "सिंगापुर और रॉटरडैम के प्रमुख व्यापारिक केंद्रों में शिपिंग वॉल्यूम में 12% की वृद्धि देखी गई।",
+      "निर्माता तेजी से अपनी आपूर्ति श्रृंखला को घरेलू क्षेत्रीय नेटवर्क की तरफ स्थानांतरित कर रहे हैं।",
+      "चालू वित्त वर्ष की तीसरी तिमाही तक कार्गो भीड़ से राहत मिलने की भविष्यवाणी की गई है।"
+    ],
     source: "Reuters",
     link: "https://www.reuters.com",
     category: "world",
@@ -693,6 +950,18 @@ const FALLBACK_STORIES = [
     id: "fb-politics-1",
     headline: "Bipartisan Infrastructure Bill Approved by Congressional Committee",
     summary: "The Senate Committee on Environment and Public Works has advanced a landmark $90bn regional transit modernization bill. Both parties reached a compromise on funding streams, focusing on public-private partnerships rather than direct tax increases. The bill now heads to the full Senate floor for a final vote next week.",
+    extendedSummary: [
+      "The Senate Environment and Public Works Committee passed a $90 billion public transit bill.",
+      "Funding stream relies on private-public partnerships instead of raising consumer tax rates.",
+      "The transit bill moves to the full Senate floor for final voting next week."
+    ],
+    hindiHeadline: "कांग्रेस समिति द्वारा द्विदलीय बुनियादी ढांचा विधेयक को मंजूरी",
+    hindiSummary: "सीनेट की पर्यावरण और लोक निर्माण समिति ने 90 अरब डॉलर के क्षेत्रीय पारगमन आधुनिकीकरण विधेयक को आगे बढ़ाया है। दोनों दलों ने प्रत्यक्ष कर बढ़ाने के बजाय सार्वजनिक-निजी भागीदारी पर ध्यान केंद्रित करते हुए फंडिंग पर समझौता किया है। यह विधेयक अगले सप्ताह अंतिम मतदान के लिए सीनेट में जाएगा।",
+    hindiExtendedSummary: [
+      "सीनेट समिति ने 90 अरब डॉलर के बुनियादी ढांचा आधुनिकीकरण विधेयक को मंजूरी दी।",
+      "वित्तपोषण सीधे कर बढ़ाने के बजाय सार्वजनिक-निजी भागीदारी मॉडल पर निर्भर करता है।",
+      "यह ऐतिहासिक पारगमन विधेयक अगले सप्ताह अंतिम वोट के लिए सीनेट में पेश किया जाएगा।"
+    ],
     source: "Politico",
     link: "https://www.politico.com",
     category: "politics",
@@ -1057,7 +1326,14 @@ function App() {
             await new Promise(resolve => setTimeout(resolve, 200))
             if (isCancelled) break
 
-            const prompt = `Rewrite the following news article title and description into a catchy, engaging headline and a highly detailed, comprehensive 4-5 sentence summary (around 80-120 words). The summary MUST cover the key facts: Who was involved, What occurred, Where and When it took place, and Why/How it happened. Include any essential numbers, quotes, background context, or impacts, ensuring it serves as a complete stand-alone brief that fully informs the reader. Format the response strictly as a JSON object with keys "headline" and "summary" like this: {"headline": "...", "summary": "..."}. Do not include any other text, markdown code blocks, or explanations. Just raw JSON.
+            const prompt = `Rewrite the following news article title and description. You must return a JSON object with the following exact keys:
+"headline" (catchy English headline),
+"summary" (comprehensive 4-5 sentence English summary paragraph loaded with facts/figures),
+"extendedSummary" (an array of 3 key English bullet point facts/metrics),
+"hindiHeadline" (Hindi translation of the headline),
+"hindiSummary" (Hindi translation of the summary paragraph),
+"hindiExtendedSummary" (an array of 3 key Hindi bullet point facts/metrics).
+Do not return any other text, explanations, or code blocks. Just raw JSON.
 Title: ${story.originalHeadline}
 Description: ${story.originalSummary}`
 
@@ -1080,9 +1356,6 @@ Description: ${story.originalSummary}`
             }
 
             const data = await response.json()
-            let aiHeadline = ''
-            let aiSummary = ''
-
             if (data && data.response) {
               let parsed = null
               if (typeof data.response === 'object' && data.response !== null) {
@@ -1104,27 +1377,44 @@ Description: ${story.originalSummary}`
               }
 
               if (parsed && parsed.headline && parsed.summary) {
-                aiHeadline = parsed.headline
-                aiSummary = parsed.summary
-              }
-            }
+                const aiHeadline = parsed.headline
+                const aiSummary = parsed.summary
+                const aiExtendedSummary = parsed.extendedSummary || []
+                const aiHindiHeadline = parsed.hindiHeadline || ''
+                const aiHindiSummary = parsed.hindiSummary || ''
+                const aiHindiExtendedSummary = parsed.hindiExtendedSummary || []
 
-            if (aiHeadline && aiSummary) {
-              const updatedCache = loadAICache()
-              updatedCache[story.link] = {
-                headline: aiHeadline,
-                summary: aiSummary
-              }
-              saveAICache(updatedCache)
+                const updatedCache = loadAICache()
+                updatedCache[story.link] = {
+                  headline: aiHeadline,
+                  summary: aiSummary,
+                  extendedSummary: aiExtendedSummary,
+                  hindiHeadline: aiHindiHeadline,
+                  hindiSummary: aiHindiSummary,
+                  hindiExtendedSummary: aiHindiExtendedSummary
+                }
+                saveAICache(updatedCache)
 
-              // Dynamically update stories in state so they instantly transition to the AI-enhanced versions
-              setStories(prevStories =>
-                prevStories.map(s =>
-                  s.link === story.link
-                    ? { ...s, headline: aiHeadline, summary: aiSummary, isAiEnhanced: true }
-                    : s
+                // Dynamically update stories in state so they instantly transition to the AI-enhanced versions
+                setStories(prevStories =>
+                  prevStories.map(s =>
+                    s.link === story.link
+                      ? { 
+                          ...s, 
+                          headline: aiHeadline, 
+                          summary: aiSummary, 
+                          extendedSummary: aiExtendedSummary,
+                          hindiHeadline: aiHindiHeadline,
+                          hindiSummary: aiHindiSummary,
+                          hindiExtendedSummary: aiHindiExtendedSummary,
+                          isAiEnhanced: true 
+                        }
+                      : s
+                  )
                 )
-              )
+              } else {
+                failedLinksRef.current.add(story.link)
+              }
             } else {
               failedLinksRef.current.add(story.link)
             }
@@ -1261,7 +1551,7 @@ Description: ${story.originalSummary}`
               ) : stories.length > 0 ? (
                 stories.map(story => (
                   <div key={story.id} className="h-[calc(100dvh-170px)] min-h-[350px] w-full shrink-0 snap-start snap-always py-1 flex items-center justify-center">
-                    <NewsCard story={story} />
+                    <NewsCard story={story} appTheme={appTheme} />
                   </div>
                 ))
               ) : (
