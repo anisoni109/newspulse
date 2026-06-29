@@ -503,6 +503,37 @@ function ExplorePage({
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6 space-y-6 overflow-y-auto pb-24">
+      {/* Quick Country Presets */}
+      <div className="bg-white/5 border border-white/10 rounded-2xl p-5 shadow-xl">
+        <h2 className="text-base font-extrabold text-white mb-1.5 flex items-center gap-2">
+          <span>📍</span> Quick Country Presets
+        </h2>
+        <p className="text-[11px] text-gray-400 mb-3.5">Switch location instantly to pull localized global reports.</p>
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+          {COUNTRIES.map(c => {
+            const isActive = tempCountry === c.id
+            return (
+              <button
+                key={`preset-${c.id}`}
+                onClick={() => {
+                  playClickChime()
+                  setTempCountry(c.id)
+                  setUserCountry(c.id)
+                  localStorage.setItem('NEWS_USER_COUNTRY', c.id)
+                }}
+                className={`flex items-center gap-1.5 px-3.5 py-2 rounded-full border text-xs font-bold transition-all whitespace-nowrap active:scale-95 ${
+                  isActive
+                    ? `border-transparent bg-gradient-to-r ${activeTheme.color} text-white shadow-md`
+                    : 'border-white/5 bg-gray-900/40 hover:bg-gray-800/40 text-gray-400 hover:text-gray-300'
+                }`}
+              >
+                <span>{c.icon}</span>
+                <span>{c.label}</span>
+              </button>
+            )
+          })}
+        </div>
+      </div>
       {/* Dynamic Filter Section */}
       <div className="bg-white/5 border border-white/10 rounded-2xl p-5 shadow-xl">
         <h2 className="text-base font-extrabold text-white mb-1 flex items-center gap-2">
@@ -1012,90 +1043,101 @@ function App() {
 
       if (storiesToEnhance.length === 0) return
 
-      for (const story of storiesToEnhance) {
-        if (isCancelled) break
+      // Concurrency limit of 3 to speed up background generation significantly!
+      const CONCURRENCY_LIMIT = 3
+      const queue = [...storiesToEnhance]
 
-        try {
-          // Polite delay between background requests to avoid overloading the endpoint
-          await new Promise(resolve => setTimeout(resolve, 1000))
-          if (isCancelled) break
+      const worker = async () => {
+        while (queue.length > 0 && !isCancelled) {
+          const story = queue.shift()
+          if (!story) break
 
-          const prompt = `Rewrite the following news article title and description into a catchy, engaging headline and a highly detailed, comprehensive 4-5 sentence summary (around 80-120 words). The summary MUST cover the key facts: Who was involved, What occurred, Where and When it took place, and Why/How it happened. Include any essential numbers, quotes, background context, or impacts, ensuring it serves as a complete stand-alone brief that fully informs the reader. Format the response strictly as a JSON object with keys "headline" and "summary" like this: {"headline": "...", "summary": "..."}. Do not include any other text, markdown code blocks, or explanations. Just raw JSON.
+          try {
+            // Polite stagger between requests to prevent API rate limiting
+            await new Promise(resolve => setTimeout(resolve, 200))
+            if (isCancelled) break
+
+            const prompt = `Rewrite the following news article title and description into a catchy, engaging headline and a highly detailed, comprehensive 4-5 sentence summary (around 80-120 words). The summary MUST cover the key facts: Who was involved, What occurred, Where and When it took place, and Why/How it happened. Include any essential numbers, quotes, background context, or impacts, ensuring it serves as a complete stand-alone brief that fully informs the reader. Format the response strictly as a JSON object with keys "headline" and "summary" like this: {"headline": "...", "summary": "..."}. Do not include any other text, markdown code blocks, or explanations. Just raw JSON.
 Title: ${story.originalHeadline}
 Description: ${story.originalSummary}`
 
-          const controller = new AbortController()
-          const timeoutId = setTimeout(() => controller.abort(), 8000)
+            const controller = new AbortController()
+            const timeoutId = setTimeout(() => controller.abort(), 8000)
 
-          const response = await fetch('https://devtoolbox-api.devtoolbox-api.workers.dev/ai/generate', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ prompt }),
-            signal: controller.signal
-          })
-          clearTimeout(timeoutId)
+            const response = await fetch('https://devtoolbox-api.devtoolbox-api.workers.dev/ai/generate', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ prompt }),
+              signal: controller.signal
+            })
+            clearTimeout(timeoutId)
 
-          if (!response.ok) {
-            failedLinksRef.current.add(story.link)
-            continue
-          }
+            if (!response.ok) {
+              failedLinksRef.current.add(story.link)
+              continue
+            }
 
-          const data = await response.json()
-          let aiHeadline = ''
-          let aiSummary = ''
+            const data = await response.json()
+            let aiHeadline = ''
+            let aiSummary = ''
 
-          if (data && data.response) {
-            let parsed = null
-            if (typeof data.response === 'object' && data.response !== null) {
-              parsed = data.response
-            } else if (typeof data.response === 'string') {
-              try {
-                parsed = JSON.parse(data.response.trim())
-              } catch (e) {
-                // Heuristic regex backup parser
-                const headlineMatch = data.response.match(/"headline"\s*:\s*"([^"]+)"/)
-                const summaryMatch = data.response.match(/"summary"\s*:\s*"([^"]+)"/)
-                if (headlineMatch && summaryMatch) {
-                  parsed = {
-                    headline: headlineMatch[1],
-                    summary: summaryMatch[1]
+            if (data && data.response) {
+              let parsed = null
+              if (typeof data.response === 'object' && data.response !== null) {
+                parsed = data.response
+              } else if (typeof data.response === 'string') {
+                try {
+                  parsed = JSON.parse(data.response.trim())
+                } catch (e) {
+                  // Heuristic regex backup parser
+                  const headlineMatch = data.response.match(/"headline"\s*:\s*"([^"]+)"/)
+                  const summaryMatch = data.response.match(/"summary"\s*:\s*"([^"]+)"/)
+                  if (headlineMatch && summaryMatch) {
+                    parsed = {
+                      headline: headlineMatch[1],
+                      summary: summaryMatch[1]
+                    }
                   }
                 }
               }
+
+              if (parsed && parsed.headline && parsed.summary) {
+                aiHeadline = parsed.headline
+                aiSummary = parsed.summary
+              }
             }
 
-            if (parsed && parsed.headline && parsed.summary) {
-              aiHeadline = parsed.headline
-              aiSummary = parsed.summary
-            }
-          }
+            if (aiHeadline && aiSummary) {
+              const updatedCache = loadAICache()
+              updatedCache[story.link] = {
+                headline: aiHeadline,
+                summary: aiSummary
+              }
+              saveAICache(updatedCache)
 
-          if (aiHeadline && aiSummary) {
-            const updatedCache = loadAICache()
-            updatedCache[story.link] = {
-              headline: aiHeadline,
-              summary: aiSummary
-            }
-            saveAICache(updatedCache)
-
-            // Dynamically update stories in state so they instantly transition to the AI-enhanced versions
-            setStories(prevStories =>
-              prevStories.map(s =>
-                s.link === story.link
-                  ? { ...s, headline: aiHeadline, summary: aiSummary, isAiEnhanced: true }
-                  : s
+              // Dynamically update stories in state so they instantly transition to the AI-enhanced versions
+              setStories(prevStories =>
+                prevStories.map(s =>
+                  s.link === story.link
+                    ? { ...s, headline: aiHeadline, summary: aiSummary, isAiEnhanced: true }
+                    : s
+                )
               )
-            )
-          } else {
+            } else {
+              failedLinksRef.current.add(story.link)
+            }
+          } catch (error) {
+            console.warn(`Background AI enhancement failed for: ${story.originalHeadline}`, error)
             failedLinksRef.current.add(story.link)
           }
-        } catch (error) {
-          console.warn(`Background AI enhancement failed for: ${story.originalHeadline}`, error)
-          failedLinksRef.current.add(story.link)
         }
       }
+
+      // Start workers in parallel
+      const workers = Array.from({ length: CONCURRENCY_LIMIT }).map(() => worker())
+      await Promise.all(workers)
     }
 
     processQueue()
@@ -1138,7 +1180,7 @@ Description: ${story.originalSummary}`
   const activeTheme = THEMES.find(t => t.id === appTheme) || THEMES[0]
 
   return (
-    <div className="h-screen w-screen overflow-hidden flex flex-col bg-gradient-to-b from-gray-950 via-slate-950 to-black select-none">
+    <div className="h-[100dvh] w-screen overflow-hidden flex flex-col bg-gradient-to-b from-gray-950 via-slate-950 to-black select-none">
       {/* Header */}
       <header className="shrink-0 bg-gray-950/80 backdrop-blur-xl border-b border-white/10 shadow-lg shadow-black/20">
         <div className="max-w-2xl mx-auto px-4 py-3">
@@ -1212,13 +1254,13 @@ Description: ${story.originalSummary}`
               {loading && stories.length === 0 ? (
                 // Show skeletons while loading initially
                 Array.from({ length: 3 }).map((_, i) => (
-                  <div key={`skeleton-${i}`} className="h-[calc(100vh-170px)] min-h-[350px] w-full shrink-0 snap-start snap-always py-1 flex items-center justify-center">
+                  <div key={`skeleton-${i}`} className="h-[calc(100dvh-170px)] min-h-[350px] w-full shrink-0 snap-start snap-always py-1 flex items-center justify-center">
                     <SkeletonCard />
                   </div>
                 ))
               ) : stories.length > 0 ? (
                 stories.map(story => (
-                  <div key={story.id} className="h-[calc(100vh-170px)] min-h-[350px] w-full shrink-0 snap-start snap-always py-1 flex items-center justify-center">
+                  <div key={story.id} className="h-[calc(100dvh-170px)] min-h-[350px] w-full shrink-0 snap-start snap-always py-1 flex items-center justify-center">
                     <NewsCard story={story} />
                   </div>
                 ))
