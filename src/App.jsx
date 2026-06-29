@@ -192,74 +192,414 @@ const COUNTRY_WORLD_FEEDS = {
 // ─── CORS Proxy for RSS Feeds ────────────────────────────────────────
 const PROXY_URL = 'https://api.allorigins.win/raw?url='
 
-// ─── India-specific sources for each category ────────────────────────
-function getIndiaSources(category) {
-  const indiaSourcesMap = {
-    world: [
-      { name: 'NDTV', url: 'https://www.ndtv.com/world-news', feed: 'https://feeds.feedburner.com/ndtvnews-top-stories' },
-      { name: 'Times of India World', url: 'https://timesofindia.indiatimes.com/world-news', feed: 'https://timesofindia.indiatimes.com/rssfeedstopstories.cms' }
-    ],
-    business: [
-      { name: 'Economic Times', url: 'https://economictimes.indiatimes.com', feed: 'https://economictimes.indiatimes.com/rssdefaultpath.cms' },
-      { name: 'Moneycontrol', url: 'https://www.moneycontrol.com/news/business/', feed: 'https://www.moneycontrol.com/rss/business.xml' }
-    ],
-    technology: [
-      { name: 'YourStory Tech', url: 'https://yourstory.com/tech', feed: 'https://yourstory.com/tech/feed' },
-      { name: 'Inc42', url: 'https://inc42.com', feed: 'https://inc42.com/feed/' }
-    ],
-    sports: [
-      { name: 'ESPNcricinfo', url: 'https://www.espncricinfo.com', feed: 'https://www.espncricinfo.com/rss/content/story/feeds/0.xml' },
-      { name: 'Sportskeeda Cricket', url: 'https://www.sportskeeda.com/cricket', feed: 'https://www.sportskeeda.com/feed/' }
-    ],
-    entertainment: [
-      { name: 'Filmfare Bollywood', url: 'https://www.filmfare.com/bollywood-news/', feed: 'https://www.filmfare.com/rss.xml' },
-      { name: 'India Today Entertainment', url: 'https://www.indiatoday.in/entertainment', feed: 'https://www.indiatoday.in/entertainment/rss' }
-    ],
-    health: [
-      { name: 'Healthshots India', url: 'https://www.healthshots.com', feed: 'https://www.healthshots.com/feed/' },
-      { name: 'Times of India Health', url: 'https://timesofindia.indiatimes.com/life-style/health-fitness', feed: 'https://timesofindia.indiatimes.com/rssfeedstopstories.cms' }
-    ],
-    startups: [
-      { name: 'YourStory Startups', url: 'https://yourstory.com/startups', feed: 'https://yourstory.com/startups/feed' },
-      { name: 'Inc42 Media', url: 'https://inc42.com/media/', feed: 'https://inc42.com/feed/' }
-    ],
-    politics: [
-      { name: 'NDTV Politics', url: 'https://www.ndtv.com/india', feed: 'https://feeds.feedburner.com/ndtvnews-top-stories' },
-      { name: 'India Today Politics', url: 'https://www.indiatoday.in/india/', feed: 'https://www.indiatoday.in/india/rss' }
-    ],
-    science: [
-      { name: 'Science India', url: 'https://www.scienceindia.in', feed: 'https://www.scienceindia.in/feed/' },
-      { name: 'Times of India Science', url: 'https://timesofindia.indiatimes.com/science', feed: 'https://timesofindia.indiatimes.com/rssfeedstopstories.cms' }
-    ],
-    automobile: [
-      { name: 'Overdrive India', url: 'https://www.overdrive.in', feed: 'https://www.overdrive.in/feed/' },
-      { name: 'GT Auto India', url: 'https://www.gtautoindia.com', feed: 'https://www.gtautoindia.com/feed/' }
-    ],
-    travel: [
-      { name: 'India Today Travel', url: 'https://www.indiatoday.in/travel', feed: 'https://www.indiatoday.in/travel/rss' },
-      { name: 'Hindustan Times Travel', url: 'https://www.hindustantimes.com/travel', feed: 'https://www.hindustantimes.com/feed' }
-    ],
-    fashion: [
-      { name: 'Vogue India', url: 'https://www.vogue.in', feed: 'https://www.vogue.in/rss.xml' },
-      { name: 'Elle India', url: 'https://www.elle.com', feed: 'https://www.elle.com/feed/' }
-    ],
-    education: [
-      { name: 'Education Times India', url: 'https://www.educationtimes.com', feed: 'https://www.educationtimes.com/feed/' },
-      { name: 'Times of India Education', url: 'https://timesofindia.indiatimes.com/education', feed: 'https://timesofindia.indiatimes.com/rssfeedstopstories.cms' }
-    ],
-    miscellaneous: [
-      { name: 'India Today Weird', url: 'https://www.indiatoday.in', feed: 'https://www.indiatoday.in/feed/' },
-      { name: 'Hindustan Times', url: 'https://www.hindustantimes.com', feed: 'https://www.hindustantimes.com/feed' }
-    ]
-  }
-  
+// ─── Country-specific sources per category ───────────────────────────
+function getCountrySources(country, category) {
   if (category === 'all') return null
   
-  const sources = indiaSourcesMap[category]
-  if (!sources) return null
+  const countryFeeds = COUNTRY_CATEGORY_FEEDS[country] || {}
+  const sources = countryFeeds[category]
+  
+  if (!sources || sources.length === 0) return null
   
   // Shuffle and return up to 2 sources per category for variety
   return [...sources].sort(() => Math.random() - 0.5).slice(0, 2)
+}
+
+// Country × Category RSS feeds database
+const COUNTRY_CATEGORY_FEEDS = {
+  in: {
+    world: [
+      { name: 'NDTV World', feed: 'https://feeds.feedburner.com/ndtvnews-top-stories' },
+      { name: 'Times of India World', feed: 'https://timesofindia.indiatimes.com/rssfeedstopstories.cms' }
+    ],
+    business: [
+      { name: 'Economic Times', feed: 'https://economictimes.indiatimes.com/rssdefaultpath.cms' },
+      { name: 'Moneycontrol Business', feed: 'https://www.moneycontrol.com/rss/business.xml' }
+    ],
+    technology: [
+      { name: 'YourStory Tech', feed: 'https://yourstory.com/tech/feed' },
+      { name: 'Inc42', feed: 'https://inc42.com/feed/' }
+    ],
+    sports: [
+      { name: 'ESPNcricinfo', feed: 'https://www.espncricinfo.com/rss/content/story/feeds/0.xml' },
+      { name: 'Sportskeeda', feed: 'https://www.sportskeeda.com/feed/' }
+    ],
+    entertainment: [
+      { name: 'Filmfare Bollywood', feed: 'https://www.filmfare.com/rss.xml' },
+      { name: 'India Today Entertainment', feed: 'https://www.indiatoday.in/entertainment/rss' }
+    ],
+    health: [
+      { name: 'Healthshots India', feed: 'https://www.healthshots.com/feed/' },
+      { name: 'TOI Health', feed: 'https://timesofindia.indiatimes.com/rssfeedstopstories.cms' }
+    ],
+    startups: [
+      { name: 'YourStory Startups', feed: 'https://yourstory.com/startups/feed' },
+      { name: 'Inc42 Media', feed: 'https://inc42.com/feed/' }
+    ],
+    politics: [
+      { name: 'NDTV India', feed: 'https://feeds.feedburner.com/ndtvnews-top-stories' },
+      { name: 'India Today Politics', feed: 'https://www.indiatoday.in/india/rss' }
+    ],
+    science: [
+      { name: 'Science India', feed: 'https://www.scienceindia.in/feed/' },
+      { name: 'TOI Science', feed: 'https://timesofindia.indiatimes.com/rssfeedstopstories.cms' }
+    ],
+    automobile: [
+      { name: 'Overdrive India', feed: 'https://www.overdrive.in/feed/' },
+      { name: 'GT Auto India', feed: 'https://www.gtautoindia.com/feed/' }
+    ],
+    travel: [
+      { name: 'India Today Travel', feed: 'https://www.indiatoday.in/travel/rss' },
+      { name: 'Hindustan Times Travel', feed: 'https://www.hindustantimes.com/feed' }
+    ],
+    fashion: [
+      { name: 'Vogue India', feed: 'https://www.vogue.in/rss.xml' },
+      { name: 'Elle India', feed: 'https://www.elle.com/feed/' }
+    ],
+    education: [
+      { name: 'Education Times India', feed: 'https://www.educationtimes.com/feed/' },
+      { name: 'TOI Education', feed: 'https://timesofindia.indiatimes.com/rssfeedstopstories.cms' }
+    ],
+    miscellaneous: [
+      { name: 'India Today Weird', feed: 'https://www.indiatoday.in/feed/' },
+      { name: 'Hindustan Times', feed: 'https://www.hindustantimes.com/feed' }
+    ]
+  },
+  us: {
+    world: [
+      { name: 'CNN Top News', feed: 'https://rss.cnn.com/rss/cnn_topstories.rss' },
+      { name: 'USA Today', feed: 'https://rssfeeds.usatoday.com/usatoday-NewsTopStories' }
+    ],
+    politics: [
+      { name: 'Politico', feed: 'https://rss.politico.com/politics-policy.xml' },
+      { name: 'HuffPost Politics', feed: 'https://www.huffpost.com/section/politics/feed' }
+    ],
+    business: [
+      { name: 'CNBC Business', feed: 'https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=100003114' },
+      { name: 'Forbes', feed: 'https://www.forbes.com/feed/' }
+    ],
+    technology: [
+      { name: 'TechCrunch', feed: 'https://techcrunch.com/feed/' },
+      { name: 'The Verge', feed: 'https://www.theverge.com/rss/index.xml' }
+    ],
+    sports: [
+      { name: 'ESPN', feed: 'https://www.espn.com/espn/rss/news' },
+      { name: 'Sports Illustrated', feed: 'https://www.si.com/rss/topstories.rss' }
+    ],
+    entertainment: [
+      { name: 'Variety', feed: 'https://variety.com/feed/' },
+      { name: 'Hollywood Reporter', feed: 'https://www.hollywoodreporter.com/feed/' }
+    ],
+    health: [
+      { name: 'WebMD Health', feed: 'https://www.webmd/rss/health.rss' },
+      { name: 'Healthline', feed: 'https://www.healthline.com/rss/health' }
+    ],
+    science: [
+      { name: 'Science Daily', feed: 'https://www.sciencedaily.com/rss/all.xml' },
+      { name: 'NASA Science', feed: 'https://www.nasa.gov/rss/dyn/breaking_news.rss' }
+    ],
+    automobile: [
+      { name: 'Motor1 US', feed: 'https://www.motor1.com/rss/news/all/' },
+      { name: 'Car and Driver', feed: 'https://www.caranddriver.com/feed/' }
+    ],
+    travel: [
+      { name: 'Travel + Leisure', feed: 'https://www.travelandleisure.com/feed' }
+    ],
+    education: [
+      { name: 'Chronicle of Higher Ed', feed: 'https://www.chronicle.com/rss' },
+      { name: 'EdSurge', feed: 'https://www.edsurge.com/feed' }
+    ]
+  },
+  gb: {
+    world: [
+      { name: 'BBC News UK', feed: 'https://feeds.bbci.co.uk/news/rss.xml' },
+      { name: 'Sky News UK', feed: 'https://news.sky.com/info/rss' }
+    ],
+    politics: [
+      { name: 'The Guardian Politics', feed: 'https://www.theguardian.com/politics/rss' },
+      { name: 'BBC Politics', feed: 'https://feeds.bbci.co.uk/news/politics/rss.xml' }
+    ],
+    business: [
+      { name: 'BBC Business', feed: 'https://feeds.bbci.co.uk/news/business/rss.xml' },
+      { name: 'The Guardian Business', feed: 'https://www.theguardian.com/business/rss' }
+    ],
+    technology: [
+      { name: 'BBC Tech', feed: 'https://feeds.bbci.co.uk/news/technology/rss.xml' },
+      { name: 'The Register', feed: 'https://www.theregister.com/headlines.atom' }
+    ],
+    sports: [
+      { name: 'Sky Sports', feed: 'https://www.skysports.com/rss/12040' },
+      { name: 'BBC Sport', feed: 'https://feeds.bbci.co.uk/sport/rss.xml' }
+    ],
+    entertainment: [
+      { name: 'BBC Entertainment', feed: 'https://feeds.bbci.co.uk/news/entertainment_and_arts/rss.xml' },
+      { name: 'The Guardian Culture', feed: 'https://www.theguardian.com/culture/rss' }
+    ],
+    health: [
+      { name: 'NHS News', feed: 'https://feeds.bbci.co.uk/news/health/rss.xml' },
+      { name: 'The Guardian Health', feed: 'https://www.theguardian.com/society/health-and-wellbeing-rss' }
+    ],
+    science: [
+      { name: 'BBC Science', feed: 'https://feeds.bbci.co.uk/news/science_and_environment/rss.xml' },
+      { name: 'New Scientist', feed: 'https://www.newscientist.com/feed/home' }
+    ],
+    automobile: [
+      { name: 'Top Gear', feed: 'https://www.topgear.com/rss/news' }
+    ],
+    travel: [
+      { name: 'The Guardian Travel', feed: 'https://www.theguardian.com/travel/rss' }
+    ]
+  },
+  au: {
+    world: [
+      { name: 'ABC News Australia', feed: 'https://www.abc.net.au/news/feed/51120/rss.xml' },
+      { name: 'SBS News Australia', feed: 'https://www.sbs.com.au/news/feed' }
+    ],
+    politics: [
+      { name: 'ABC Politics', feed: 'https://www.abc.net.au/news/feed/politics/rss.xml' },
+      { name: 'Guardian Australia Politics', feed: 'https://www.theguardian.com/australia-news/politics/rss' }
+    ],
+    business: [
+      { name: 'Australian Financial Review', feed: 'https://www.afr.com/feed' },
+      { name: 'ABC Business', feed: 'https://www.abc.net.au/news/feed/business/rss.xml' }
+    ],
+    technology: [
+      { name: 'The AFR Tech', feed: 'https://www.afr.com/technology/feed' },
+      { name: 'News.com.au Tech', feed: 'https://www.news.com.au/feed' }
+    ],
+    sports: [
+      { name: 'ESPN Australia', feed: 'https://www.espn.com.au/espn/rss/news' },
+      { name: 'ABC Sport', feed: 'https://www.abc.net.au/sport/rss' }
+    ]
+  },
+  ca: {
+    world: [
+      { name: 'CBC News Canada', feed: 'https://www.cbc.ca/cctoc/blogs/rss-feed' },
+      { name: 'Global News Canada', feed: 'https://globalnews.ca/feed/' }
+    ],
+    politics: [
+      { name: 'CBC Politics', feed: 'https://www.cbc.ca/news/politics/rss' },
+      { name: 'CTV National News', feed: 'https://national.ctvnews.ca/ca/rss' }
+    ],
+    business: [
+      { name: 'Globe and Mail Business', feed: 'https://www.theglobeandmail.com/feed/business/feed/' },
+      { name: 'CBC Business', feed: 'https://www.cbc.ca/news/business/rss' }
+    ],
+    technology: [
+      { name: 'BetaKit Canada', feed: 'https://betakit.com/feed' },
+      { name: 'Digital Journal Tech', feed: 'https://www.digitaljournal.com/topic/technology/feed' }
+    ],
+    sports: [
+      { name: 'CBC Sport', feed: 'https://www.cbc.ca/sports/rss' },
+      { name: 'TSN Sports', feed: 'https://www.tsn.ca/rssfeeds' }
+    ]
+  },
+  de: {
+    world: [
+      { name: 'DW News Germany', feed: 'https://rss.dw.com/rdf/rss-en-all' },
+      { name: 'Deutsche Welle Top Stories', feed: 'https://www.dw.com/en/top-stories/rss' }
+    ],
+    politics: [
+      { name: 'DW Politics', feed: 'https://www.dw.com/en/politics/rss' },
+      { name: 'Tagesschau Politik', feed: 'https://www.tagesschau.de/xml/rss2/' }
+    ],
+    business: [
+      { name: 'Handelsblatt Business', feed: 'https://www.handelsblatt.com/articles/index.xml' },
+      { name: 'DW Business', feed: 'https://www.dw.com/en/business-economy/rss' }
+    ],
+    technology: [
+      { name: 'Heise Online', feed: 'https://www.heise.de/ix/news-2.xml' },
+      { name: 'Golem News', feed: 'https://www.golem.de/rss' }
+    ]
+  },
+  fr: {
+    world: [
+      { name: 'France 24 English', feed: 'https://www.france24.com/en/rss' },
+      { name: 'RFI Monde', feed: 'https://www.rfi.fr/fr/rss' }
+    ],
+    politics: [
+      { name: 'Le Monde Politics', feed: 'https://www.lemonde.fr/rss/une.xml' },
+      { name: 'France 24 France', feed: 'https://www.france24.com/fr/rss' }
+    ],
+    business: [
+      { name: 'Les Echos Business', feed: 'https://www.lesechos.fr/rss/feed.xml' },
+      { name: 'BFM Business', feed: 'https://www.bfmtv.com/rss/' }
+    ],
+    technology: [
+      { name: '01net Tech', feed: 'https://www.01net.com/actualites/feed' },
+      { name: 'Le Monde Tech', feed: 'https://www.lemonde.fr/informatique-et-internet/rss_une.xml' }
+    ]
+  },
+  jp: {
+    world: [
+      { name: 'NHK World Japan', feed: 'https://www3.nhk.or.jp/nhkworld/nhknews/english/index.xml' },
+      { name: 'Japan Times', feed: 'https://www.japantimes.co.jp/feed/atom/news/' }
+    ],
+    business: [
+      { name: 'Nikkei Asia Business', feed: 'https://asia.nikkei.com/rss/business' },
+      { name: 'NHK World Business', feed: 'https://www3.nhk.or.jp/nhkworld/en/news/list.rss' }
+    ],
+    technology: [
+      { name: 'Nikkei Tech', feed: 'https://asia.nikkei.com/rss/Tech' },
+      { name: 'ITmedia Japan', feed: 'https://www.itmedia.co.jp/headline/feed2.atom' }
+    ]
+  },
+  sg: {
+    world: [
+      { name: 'Channel News Asia', feed: 'https://www.channelnewsasia.com/rss/cna/news.xml' },
+      { name: 'Straits Times Singapore', feed: 'https://www.straitstimes.com/singapore/feed' }
+    ],
+    business: [
+      { name: 'Business Times SG', feed: 'https://www.businesstimes.com.sg/rss' },
+      { name: 'CNA Business', feed: 'https://www.channelnewsasia.com/rss/cna/business.xml' }
+    ],
+    technology: [
+      { name: 'Tech in Asia Singapore', feed: 'https://www.techinasia.com/feed' },
+      { name: 'CNA Tech', feed: 'https://www.channelnewsasia.com/rss/cna/tech-digital.xml' }
+    ]
+  },
+  kr: {
+    world: [
+      { name: 'Yonhap News Korea', feed: 'https://en.yna.co.kr/RSS/index.xml' },
+      { name: 'Korea Herald', feed: 'https://www.koreaherald.com/rss' }
+    ],
+    business: [
+      { name: 'Korea Economic Daily', feed: 'https://en.mk.co.kr/news/rss/10020001/' },
+      { name: 'Yonhap Business', feed: 'https://en.yna.co.kr/RSS/index.xml' }
+    ],
+    technology: [
+      { name: 'Korea Times Tech', feed: 'https://www.koreatimes.co.uk/www/rss/tech.rss' },
+      { name: 'Yonhap Tech', feed: 'https://en.yna.co.kr/RSS/index.xml' }
+    ]
+  },
+  br: {
+    world: [
+      { name: 'G1 Brasil', feed: 'https://g1.globo.com/DiaLanche/rss2/' },
+      { name: 'UOL News Brazil', feed: 'https://noticias.uol.com.br/rss/feed.xml' }
+    ],
+    business: [
+      { name: 'InfoMoney Brasil', feed: 'https://www.infomoney.com.br/feed/' },
+      { name: 'Valor Economico', feed: 'https://valor.globo.com/feeds/rss20.xml' }
+    ],
+    technology: [
+      { name: 'Tecnoblog Brasil', feed: 'https://tecnoblog.net/feed/' },
+      { name: 'G1 Tech', feed: 'https://g1.globo.com/Tecnologia/rss2/' }
+    ]
+  },
+  za: {
+    world: [
+      { name: 'Daily Maverick SA', feed: 'https://www.dailymaverick.co.za/feed/' },
+      { name: 'News24 South Africa', feed: 'https://www.news24.com/RSS/feeds/top-stories.xml' }
+    ],
+    politics: [
+      { name: 'Daily Maverick Politics', feed: 'https://www.dailymaverick.co.za/article/' },
+      { name: 'News24 Politics', feed: 'https://www.news24.com/RSS/feeds/politics.xml' }
+    ],
+    business: [
+      { name: 'Business Day SA', feed: 'https://www.businessday.co.za/feed' },
+      { name: 'Moneyweb SA', feed: 'https://www.moneyweb.co.za/feed/' }
+    ]
+  },
+  ae: {
+    world: [
+      { name: 'The National UAE', feed: 'https://www.thenationalnews.com/rss/' },
+      { name: 'Gulf News UAE', feed: 'https://gulfnews.com/rss' }
+    ],
+    business: [
+      { name: 'Khaleej Times Business', feed: 'https://www.khaleejtimes.com/feed' },
+      { name: 'The National Business', feed: 'https://www.thenationalnews.com/rss/business.xml' }
+    ]
+  },
+  sa: {
+    world: [
+      { name: 'Arab News Saudi', feed: 'https://www.arabnews.com/rss.xml' },
+      { name: 'Saudi Gazette', feed: 'https://saudigazette.com.sa/feed/' }
+    ],
+    business: [
+      { name: 'Arab News Business', feed: 'https://www.arabnews.com/node/rss' },
+      { name: 'SPA Saudi Press', feed: 'https://spa.gov.sa/rss/' }
+    ]
+  },
+  id: {
+    world: [
+      { name: 'Jakarta Post Indonesia', feed: 'https://www.thejakartapost.com/feed' },
+      { name: 'The Straits Times Indonesia', feed: 'https://www.straitstimes.com/asia/se-asia/feed' }
+    ],
+    business: [
+      { name: 'Bisnis Indonesia', feed: 'https://www.bisnis.com/rss' },
+      { name: 'Jakarta Post Business', feed: 'https://www.thejakartapost.com/feed/business' }
+    ]
+  },
+  it: {
+    world: [
+      { name: 'ANSA English Italy', feed: 'https://www.ansa.it/english/news/news.xml' },
+      { name: 'The Local Italy', feed: 'https://www.thelocal.it/feed/' }
+    ],
+    business: [
+      { name: 'ANSA Business', feed: 'https://www.ansa.it/english/news/economy.xml' },
+      { name: 'Il Sole 24 Ore', feed: 'https://www.ilsole24ore.com/notizie/rss.xml' }
+    ]
+  },
+  es: {
+    world: [
+      { name: 'El Pais English Spain', feed: 'https://english.elpais.com/rss/' },
+      { name: 'The Local Spain', feed: 'https://www.thelocal.es/feed/' }
+    ],
+    business: [
+      { name: 'El Pais Business', feed: 'https://elpais.com/eeii/el_mundo_negocio/rss2.xml' },
+      { name: 'Cinco Dias Expansion', feed: 'https://cincodias.elpais.com/feed/' }
+    ]
+  },
+  mx: {
+    world: [
+      { name: 'Mexico News Daily', feed: 'https://mexiconewsdaily.com/feed/' },
+      { name: 'El Universal Mexico', feed: 'https://www.eluniversal.com.mx/rss' }
+    ],
+    business: [
+      { name: 'Expansion Mexico', feed: 'https://expansion.mx/rss' },
+      { name: 'El Financiero Mexico', feed: 'https://www.elfinanciero.com.mx/rss' }
+    ]
+  },
+  tr: {
+    world: [
+      { name: 'Daily Sabah Turkey', feed: 'https://www.dailysabah.com/rss/' },
+      { name: 'Hürriyet Daily News', feed: 'https://www.hurriyetdailynews.com/rss.php' }
+    ],
+    business: [
+      { name: 'Turkey Times Business', feed: 'https://turkeytimes.com/feed/' },
+      { name: 'Daily Sabah Business', feed: 'https://www.dailysabah.com/business/rss' }
+    ]
+  },
+  il: {
+    world: [
+      { name: 'Haaretz English', feed: 'https://www.haaretz.com/cmlLink/email-rss-haaretz-news-1.5173322' },
+      { name: 'Times of Israel', feed: 'https://www.timesofisrael.com/feed/' }
+    ],
+    business: [
+      { name: 'Globes Israel', feed: 'https://www.globes.co.il/rss_main.xml' },
+      { name: 'Haaretz Business', feed: 'https://www.haaretz.com/cmlLink/email-rss-business-1.5173324' }
+    ]
+  },
+  ru: {
+    world: [
+      { name: 'Moscow Times Russia', feed: 'https://www.themoscowtimes.com/feeds/rss' },
+      { name: 'RT News', feed: 'https://rt.com/rss/' }
+    ],
+    business: [
+      { name: 'Moscow Times Business', feed: 'https://www.themoscowtimes.com/category/business/rss' },
+      { name: 'RBC Russia', feed: 'https://www.rbc.ru/rbc_main/rss/' }
+    ]
+  },
+  cn: {
+    world: [
+      { name: 'China Daily World', feed: 'https://www.chinadaily.com.cn/rss/world.xml' },
+      { name: 'Global Times China', feed: 'https://www.globaltimes.cn/rss/index.xml' }
+    ],
+    business: [
+      { name: 'China Daily Business', feed: 'https://www.chinadaily.com.cn/rss/business.xml' },
+      { name: 'Caixin China', feed: 'https://www.caixinglobal.com/feed/' }
+    ]
+  }
 }
 
 // ─── Share Component — shares from your website, not the original article ──
@@ -303,8 +643,152 @@ function ShareButton({ headline, summary, storyId: propStoryId }) {
   )
 }
 
+// ─── Vote Buttons Component ────────────────────────────────────────
+function VoteButtons({ storyId }) {
+  const [upvotes, setUpvotes] = useState(() => {
+    const votes = JSON.parse(localStorage.getItem('NEWS_VOTES') || '{}')
+    return votes[storyId]?.up || Math.floor(Math.random() * 50) + 10
+  })
+  const [downvotes, setDownvotes] = useState(() => {
+    const votes = JSON.parse(localStorage.getItem('NEWS_VOTES') || '{}')
+    return votes[storyId]?.down || Math.floor(Math.random() * 20) + 3
+  })
+  const [userVote, setUserVote] = useState(() => {
+    const votes = JSON.parse(localStorage.getItem('NEWS_VOTES') || '{}')
+    return votes[storyId]?.vote || null // 'up', 'down', or null
+  })
+
+  const handleUpvote = () => {
+    const newVote = userVote === 'up' ? null : 'up'
+    const newDown = newVote === 'up' ? 'down' : downvotes > 0 && userVote === 'down' ? null : downvotes
+    
+    if (newVote === 'up') setUpvotes(v => v + 1)
+    else if (userVote === 'up') setUpvotes(v => Math.max(0, v - 1))
+    
+    if (newDown === null && userVote === 'down' && downvotes > 0) setDownvotes(d => Math.max(0, d - 1))
+    else if (newVote === 'up' && userVote === 'down') setDownvotes(0)
+    
+    setUserVote(newVote)
+    
+    const votes = JSON.parse(localStorage.getItem('NEWS_VOTES') || '{}')
+    votes[storyId] = { up: newVote === 'up' ? upvotes + (userVote !== 'up' ? 1 : 0) : Math.max(0, upvotes - (userVote === 'up' ? 1 : 0)), down: newDown || downvotes, vote: newVote }
+    localStorage.setItem('NEWS_VOTES', JSON.stringify(votes))
+  }
+
+  const handleDownvote = () => {
+    const newVote = userVote === 'down' ? null : 'down'
+    
+    if (newVote === 'down') setDownvotes(d => d + 1)
+    else if (userVote === 'down') setDownvotes(d => Math.max(0, d - 1))
+    
+    setUserVote(newVote)
+    
+    const votes = JSON.parse(localStorage.getItem('NEWS_VOTES') || '{}')
+    votes[storyId] = { up: newVote === 'up' ? upvotes + (userVote !== 'up' ? 1 : 0) : Math.max(0, upvotes - (userVote === 'up' ? 1 : 0)), down: newVote === 'down' ? downvotes + (userVote !== 'down' ? 1 : 0) : Math.max(0, downvotes - (userVote === 'down' ? 1 : 0)), vote: newVote }
+    localStorage.setItem('NEWS_VOTES', JSON.stringify(votes))
+  }
+
+  return (
+    <div className="flex items-center gap-1">
+      <button onClick={handleUpvote} className={`p-1 rounded transition-colors ${userVote === 'up' ? 'text-green-400 bg-green-500/20' : 'text-white/40 hover:text-green-400 hover:bg-white/5'}`}>
+        <svg className="w-3.5 h-3.5" fill={userVote === 'up' ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" /></svg>
+      </button>
+      <span className={`text-[10px] font-bold min-w-[20px] text-center ${userVote === 'up' ? 'text-green-400' : userVote === 'down' ? 'text-red-400' : 'text-white/50'}`}>{upvotes - downvotes}</span>
+      <button onClick={handleDownvote} className={`p-1 rounded transition-colors ${userVote === 'down' ? 'text-red-400 bg-red-500/20' : 'text-white/40 hover:text-red-400 hover:bg-white/5'}`}>
+        <svg className="w-3.5 h-3.5" fill={userVote === 'down' ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+      </button>
+    </div>
+  )
+}
+
+// ─── Comments Modal Component ──────────────────────────────────────
+function CommentsModal({ isOpen, onClose, storyId }) {
+  const [comments, setComments] = useState(() => {
+    const allComments = JSON.parse(localStorage.getItem('NEWS_COMMENTS') || '{}')
+    return allComments[storyId] || []
+  })
+  const [newComment, setNewComment] = useState('')
+
+  if (!isOpen) return null
+
+  const handleAddComment = () => {
+    if (!newComment.trim()) return
+    
+    const comment = {
+      id: Date.now(),
+      text: newComment.trim(),
+      author: 'You',
+      time: 'Just now'
+    }
+    
+    const updatedComments = [...comments, comment]
+    setComments(updatedComments)
+    
+    const allComments = JSON.parse(localStorage.getItem('NEWS_COMMENTS') || '{}')
+    allComments[storyId] = updatedComments
+    localStorage.setItem('NEWS_COMMENTS', JSON.stringify(allComments))
+    setNewComment('')
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      
+      <div className="relative w-full max-w-md bg-gray-900 border-t sm:border border-white/10 rounded-t-2xl sm:rounded-2xl shadow-2xl animate-slide-up">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-white/10">
+          <h2 className="text-base font-bold text-white flex items-center gap-2">
+            💬 Comments ({comments.length})
+          </h2>
+          <button onClick={onClose} className="p-1.5 rounded-full hover:bg-white/10 text-gray-400 hover:text-white transition-colors">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
+        </div>
+
+        {/* Comments List */}
+        <div className="p-4 max-h-[50vh] overflow-y-auto no-scrollbar space-y-3">
+          {comments.length === 0 ? (
+            <p className="text-xs text-gray-500 text-center py-8">No comments yet. Be the first to share your thoughts!</p>
+          ) : (
+            comments.map(comment => (
+              <div key={comment.id} className="bg-white/5 rounded-xl p-3 border border-white/5">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs font-bold text-white">{comment.author}</span>
+                  <span className="text-[10px] text-gray-500">{comment.time}</span>
+                </div>
+                <p className="text-xs text-white/80 leading-relaxed">{comment.text}</p>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Comment Input */}
+        <div className="p-4 border-t border-white/10">
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={newComment}
+              onChange={(e) => setNewComment(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleAddComment()}
+              placeholder="Add a comment..."
+              className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+            />
+            <button
+              onClick={handleAddComment}
+              disabled={!newComment.trim()}
+              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:opacity-90 text-white text-xs font-bold disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+            >
+              Send
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── Settings Modal Component ──────────────────────────────────────
-function SettingsModal({ isOpen, onClose, newsLanguage, setNewsLanguage }) {
+function SettingsModal({ isOpen, onClose, userCountry, setUserCountry, appTheme, setAppTheme, newsLanguage, setNewsLanguage, enableTranslation, setEnableTranslation }) {
   if (!isOpen) return null
 
   const LANGUAGES = [
@@ -317,6 +801,8 @@ function SettingsModal({ isOpen, onClose, newsLanguage, setNewsLanguage }) {
     { id: 'ja', label: '日本語 (Japanese)', flag: '🇯🇵' },
     { id: 'zh', label: '中文 (Chinese)', flag: '🇨🇳' }
   ]
+
+  const activeTheme = THEMES.find(t => t.id === appTheme) || THEMES[0]
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
@@ -337,8 +823,73 @@ function SettingsModal({ isOpen, onClose, newsLanguage, setNewsLanguage }) {
         </div>
 
         {/* Content */}
-        <div className="p-4 space-y-4 max-h-[60vh] overflow-y-auto">
-          {/* News Language Section */}
+        <div className="p-4 space-y-5 max-h-[60vh] overflow-y-auto">
+          {/* Country Section */}
+          <div className="space-y-3">
+            <div>
+              <h3 className="text-xs font-bold text-gray-300 uppercase tracking-widest flex items-center gap-2">
+                📍 News Region / Country
+              </h3>
+              <p className="text-[10px] text-gray-500 mt-0.5">Select your country to see localized news feeds</p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto no-scrollbar pr-1">
+              {COUNTRIES.map(c => (
+                <button
+                  key={c.id}
+                  onClick={() => {
+                    setUserCountry(c.id)
+                    localStorage.setItem('NEWS_USER_COUNTRY', c.id)
+                  }}
+                  className={`flex items-center gap-2 p-2.5 rounded-xl border transition-all ${
+                    userCountry === c.id
+                      ? 'border-blue-500 bg-blue-500/10 text-white shadow-md'
+                      : 'border-white/5 bg-gray-800/40 hover:bg-gray-700/40 text-gray-400 hover:text-gray-300'
+                  }`}
+                >
+                  <span className="text-base">{c.icon}</span>
+                  <p className="text-[11px] font-semibold truncate">{c.label}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Theme Section */}
+          <div className="space-y-3">
+            <div>
+              <h3 className="text-xs font-bold text-gray-300 uppercase tracking-widest flex items-center gap-2">
+                🎨 App Theme
+              </h3>
+              <p className="text-[10px] text-gray-500 mt-0.5">Choose your preferred accent theme</p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              {THEMES.map(theme => (
+                <button
+                  key={theme.id}
+                  onClick={() => {
+                    setAppTheme(theme.id)
+                    localStorage.setItem('NEWS_APP_THEME', theme.id)
+                  }}
+                  className={`flex items-center gap-2 p-3 rounded-xl border transition-all ${
+                    appTheme === theme.id
+                      ? 'border-blue-500 bg-blue-500/10 text-white shadow-md'
+                      : 'border-white/5 bg-gray-800/40 hover:bg-gray-700/40 text-gray-400 hover:text-gray-300'
+                  }`}
+                >
+                  <span className="text-lg">{theme.icon}</span>
+                  <div className="text-left">
+                    <p className="text-xs font-semibold">{theme.label.split(' ')[0]}</p>
+                    {appTheme === theme.id && (
+                      <p className="text-[9px] text-blue-400">Selected</p>
+                    )}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Language Section */}
           <div className="space-y-3">
             <div>
               <h3 className="text-xs font-bold text-gray-300 uppercase tracking-widest flex items-center gap-2">
@@ -373,10 +924,29 @@ function SettingsModal({ isOpen, onClose, newsLanguage, setNewsLanguage }) {
             </div>
           </div>
 
+          {/* Translation Toggle */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5">
+              <div>
+                <p className="text-xs font-semibold text-white">Enable Hindi Translations</p>
+                <p className="text-[10px] text-gray-500 mt-0.5">Show EN/HI toggle on news cards (requires API call)</p>
+              </div>
+              <button
+                onClick={() => {
+                  setEnableTranslation(!enableTranslation)
+                  localStorage.setItem('NEWS_ENABLE_TRANSLATION', String(!enableTranslation))
+                }}
+                className={`relative w-12 h-6 rounded-full transition-colors ${enableTranslation ? 'bg-green-500' : 'bg-gray-600'}`}
+              >
+                <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${enableTranslation ? 'translate-x-6' : ''}`} />
+              </button>
+            </div>
+          </div>
+
           {/* Info */}
           <div className="bg-white/5 rounded-xl p-3 border border-white/5">
             <p className="text-[10px] text-gray-400 leading-relaxed">
-              ℹ️ Selected language affects how news is displayed. Translations (Hindi toggle on cards) work independently and require API calls.
+              ℹ️ Country selection determines which news sources are used. Language affects display only. Hindi translations use AI and require API calls.
             </p>
           </div>
         </div>
@@ -385,7 +955,7 @@ function SettingsModal({ isOpen, onClose, newsLanguage, setNewsLanguage }) {
         <div className="p-4 border-t border-white/10">
           <button
             onClick={onClose}
-            className="w-full py-2.5 rounded-xl font-bold text-sm bg-gradient-to-r from-blue-600 to-indigo-600 hover:opacity-90 text-white transition-all"
+            className={`w-full py-2.5 rounded-xl font-bold text-sm bg-gradient-to-r ${activeTheme.color} hover:opacity-90 text-white transition-all`}
           >
             Done
           </button>
@@ -412,11 +982,13 @@ function NewsCard({ story, appTheme = 'violet', enableTranslation = true }) {
   const [cardLang, setCardLang] = useState('en')
   const [translating, setTranslating] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
+  const [commentsOpen, setCommentsOpen] = useState(false)
   
   const [isNarrating, setIsNarrating] = useState(false)
   const utteranceRef = useRef(null)
 
   const activeTheme = THEMES.find(t => t.id === appTheme) || THEMES[0]
+  const storyId = story.id || contentHash(story.originalHeadline + story.originalSummary)
 
   // Content-based cache key for faster lookups (works even if link changes)
   const translationCacheKey = `trans_${contentHash(story.originalHeadline + story.originalSummary)}`
@@ -668,6 +1240,16 @@ Description: ${story.originalSummary}`
             )}
           </button>
           
+          <VoteButtons storyId={storyId} />
+          
+          <button 
+            onClick={() => setCommentsOpen(true)}
+            className="flex items-center gap-1.5 text-xs font-medium text-white/60 hover:text-white transition-colors"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
+            <span className="text-white/70">Comment</span>
+          </button>
+          
           <ShareButton headline={activeHeadline} summary={activeSummary} storyId={story.id || contentHash(activeHeadline + activeSummary)} />
         </div>
       </div>
@@ -796,6 +1378,15 @@ Description: ${story.originalSummary}`
             </div>
           </div>
         </div>
+      )}
+
+      {/* Local Comments Modal */}
+      {commentsOpen && (
+        <CommentsModal
+          isOpen={commentsOpen}
+          onClose={() => setCommentsOpen(false)}
+          storyId={storyId}
+        />
       )}
     </article>
   )
@@ -1248,6 +1839,13 @@ function App() {
     const saved = localStorage.getItem('NEWS_ENABLE_TRANSLATION')
     return saved !== 'false' // Default to enabled unless explicitly disabled
   })
+  
+  // Settings state
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [newsLanguage, setNewsLanguage] = useState(() => {
+    return localStorage.getItem('NEWS_LANGUAGE') || 'en'
+  })
+  const [commentsStoryId, setCommentsStoryId] = useState(null)
 
   // Parse RSS or Atom XML to stories
   const parseRSSFeed = useCallback((xmlText, sourceName, category) => {
@@ -1333,29 +1931,29 @@ function App() {
       const activeWorldFeeds = COUNTRY_WORLD_FEEDS[userCountry] || COUNTRY_WORLD_FEEDS.global
       
       if (selectedCategory === 'all') {
-        // Fetch all category feeds, replacing world category with regional feeds based on selected country
+        // Fetch all category feeds with country-specific sources
         Object.entries(NEWS_SOURCES).forEach(([cat, sources]) => {
-          if (cat === 'world') {
-            activeWorldFeeds.forEach(source => urlsToFetch.push({ url: source.feed, name: `${source.name} (${userCountry})`, category: cat }))
-          } else {
-            // When a specific country is selected, prefer India-specific sources for all categories
-            if (userCountry !== 'global') {
-              const indiaSources = getIndiaSources(cat)
-              if (indiaSources && indiaSources.length > 0) {
-                indiaSources.forEach(source => urlsToFetch.push({ url: source.feed, name: `${source.name} (India)`, category: cat }))
-              } else {
-                sources.forEach(source => urlsToFetch.push({ url: source.feed, name: source.name, category: cat }))
-              }
+          if (userCountry !== 'global') {
+            const countrySources = getCountrySources(userCountry, cat)
+            if (countrySources && countrySources.length > 0) {
+              countrySources.forEach(source => urlsToFetch.push({ url: source.feed, name: `${source.name} (${COUNTRIES.find(c => c.id === userCountry)?.label || userCountry})`, category: cat }))
             } else {
               sources.forEach(source => urlsToFetch.push({ url: source.feed, name: source.name, category: cat }))
             }
+          } else {
+            sources.forEach(source => urlsToFetch.push({ url: source.feed, name: source.name, category: cat }))
           }
         })
       } else if (selectedCategory === 'world') {
-        activeWorldFeeds.forEach(source => urlsToFetch.push({ url: source.feed, name: source.name, category: 'world' }))
+        activeWorldFeeds.forEach(source => urlsToFetch.push({ url: source.feed, name: `${source.name} (${userCountry})`, category: 'world' }))
       } else {
-        const sources = NEWS_SOURCES[selectedCategory] || []
-        sources.forEach(source => urlsToFetch.push({ url: source.feed, name: source.name, category: selectedCategory }))
+        const countrySources = getCountrySources(userCountry, selectedCategory)
+        if (countrySources && countrySources.length > 0) {
+          countrySources.forEach(source => urlsToFetch.push({ url: source.feed, name: `${source.name} (${COUNTRIES.find(c => c.id === userCountry)?.label || userCountry})`, category: selectedCategory }))
+        } else {
+          const sources = NEWS_SOURCES[selectedCategory] || []
+          sources.forEach(source => urlsToFetch.push({ url: source.feed, name: source.name, category: selectedCategory }))
+        }
       }
 
       // Filter feeds by custom interests if user is on the unified Top Stories / All News tab
@@ -1632,6 +2230,12 @@ Description: ${story.originalSummary}`
               </div>
             </div>
 
+            {/* Settings */}
+            <button onClick={() => setSettingsOpen(true)} className={`flex items-center gap-2 px-3 py-2 rounded-xl font-medium text-sm transition-all bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white border border-white/10 active:scale-95`}>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+              <span className="hidden sm:inline">Settings</span>
+            </button>
+
             {/* Refresh */}
             <button onClick={handleRefresh} disabled={refreshing} className={`flex items-center gap-2 px-3 py-2 rounded-xl font-medium text-sm transition-all ${refreshing ? 'bg-white/5 text-gray-500 border border-white/5' : 'bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white border border-white/10 active:scale-95'}`}>
               <svg className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
@@ -1722,6 +2326,29 @@ Description: ${story.originalSummary}`
           </div>
         )}
       </div>
+
+      {/* Settings Modal */}
+      <SettingsModal
+        isOpen={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        userCountry={userCountry}
+        setUserCountry={setUserCountry}
+        appTheme={appTheme}
+        setAppTheme={setAppTheme}
+        newsLanguage={newsLanguage}
+        setNewsLanguage={setNewsLanguage}
+        enableTranslation={enableTranslation}
+        setEnableTranslation={setEnableTranslation}
+      />
+
+      {/* Comments Modal */}
+      {commentsStoryId && (
+        <CommentsModal
+          isOpen={!!commentsStoryId}
+          onClose={() => setCommentsStoryId(null)}
+          storyId={commentsStoryId}
+        />
+      )}
 
       {/* Footer */}
       <footer className="shrink-0 py-2.5 px-4 border-t border-white/5 bg-gray-950/90 text-center z-10">
