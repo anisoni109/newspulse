@@ -106,10 +106,18 @@ function NewsCard({ story }) {
 
       {/* Main Content Area (Headline + Summary) */}
       <div className="relative z-10 flex-1 flex flex-col justify-center my-4 space-y-4 max-w-xl mx-auto w-full">
-        {/* Dynamic decorative category label */}
-        <span className={`self-start text-[10px] uppercase font-bold tracking-widest px-2.5 py-1 rounded border border-white/10 bg-white/5 text-white/60`}>
-          {catInfo.label}
-        </span>
+        {/* Dynamic decorative category label & AI brief badge */}
+        <div className="flex items-center gap-2">
+          <span className={`text-[10px] uppercase font-bold tracking-widest px-2.5 py-1 rounded border border-white/10 bg-white/5 text-white/60`}>
+            {catInfo.label}
+          </span>
+          {story.isAiEnhanced && (
+            <span className="text-[10px] uppercase font-extrabold tracking-wider px-2 py-0.5 rounded border border-purple-400/30 bg-purple-500/20 text-purple-200 animate-pulse flex items-center gap-1 shadow-md shadow-purple-900/30">
+              <span>AI Brief</span>
+              <span>✨</span>
+            </span>
+          )}
+        </div>
         
         <h2 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-white leading-tight drop-shadow-lg select-text">
           {story.headline}
@@ -198,6 +206,22 @@ function ExplorePage({ onSelectCategory, selectedCategory }) {
   )
 }
 
+// ─── Local Storage AI Cache Helpers ──────────────────────────────────
+const loadAICache = () => {
+  try {
+    const cached = localStorage.getItem('AI_STORIES_CACHE')
+    return cached ? JSON.parse(cached) : {}
+  } catch (e) {
+    return {}
+  }
+}
+
+const saveAICache = (cache) => {
+  try {
+    localStorage.setItem('AI_STORIES_CACHE', JSON.stringify(cache))
+  } catch (e) {}
+}
+
 // ─── Main App ────────────────────────────────────────────────────────
 function App() {
   const [activeTab, setActiveTab] = useState('feed') // 'feed' | 'explore'
@@ -207,6 +231,7 @@ function App() {
   const [page, setPage] = useState(0)
   const [selectedCategory, setSelectedCategory] = useState('all')
   const observerTarget = useRef(null)
+  const failedLinksRef = useRef(new Set())
 
   // Parse RSS XML to stories
   const parseRSSFeed = useCallback((xmlText, sourceName, category) => {
@@ -217,6 +242,7 @@ function App() {
       const doc = parser.parseFromString(xmlText, 'text/xml')
       const items = doc.querySelectorAll('item')
       const stories = []
+      const cache = loadAICache()
 
       items.forEach((item) => {
         let title = item.querySelector('title')?.textContent?.trim() || ''
@@ -231,15 +257,20 @@ function App() {
         if (title && description.length > 20) {
           // Truncate summary to ~280 chars for InShorts-style brevity
           const summary = description.length > 280 ? description.substring(0, 280) + '...' : description
-          
+          const cleanLink = link.startsWith('http') ? link : `https://${link}`
+          const cached = cache[cleanLink]
+
           stories.push({
             id: `${sourceName}-${title.substring(0, 30)}-${pubDate}`,
-            headline: title,
-            summary,
+            headline: cached?.headline || title,
+            summary: cached?.summary || summary,
+            originalHeadline: title,
+            originalSummary: summary,
             source: sourceName,
-            link: link.startsWith('http') ? link : `https://${link}`,
+            link: cleanLink,
             category,
             time: pubDate ? formatTimeAgo(new Date(pubDate)) : 'Just now',
+            isAiEnhanced: !!cached
           })
         }
       })
@@ -319,6 +350,114 @@ function App() {
   useEffect(() => {
     fetchStories()
   }, [fetchStories])
+
+  // Asynchronous background AI generator loop
+  useEffect(() => {
+    if (stories.length === 0) return
+
+    let isCancelled = false
+
+    const processQueue = async () => {
+      const currentCache = loadAICache()
+      // Filter stories that are not AI-enhanced, not already in cache, and haven't failed in this session
+      const storiesToEnhance = stories.filter(
+        s => !s.isAiEnhanced && !currentCache[s.link] && !failedLinksRef.current.has(s.link)
+      )
+
+      if (storiesToEnhance.length === 0) return
+
+      for (const story of storiesToEnhance) {
+        if (isCancelled) break
+
+        try {
+          // Polite delay between background requests to avoid overloading the endpoint
+          await new Promise(resolve => setTimeout(resolve, 1000))
+          if (isCancelled) break
+
+          const prompt = `Rewrite the following news article title and description into a catchy headline and a comprehensive, detailed 3-4 sentence paragraph summary (detailing the event fully so that the reader doesn't need to read the full article). Format the response strictly as a JSON object with keys "headline" and "summary" like this: {"headline": "...", "summary": "..."}. Do not include any other text, markdown code blocks, or explanations. Just raw JSON.
+Title: ${story.originalHeadline}
+Description: ${story.originalSummary}`
+
+          const controller = new AbortController()
+          const timeoutId = setTimeout(() => controller.abort(), 8000)
+
+          const response = await fetch('https://devtoolbox-api.devtoolbox-api.workers.dev/ai/generate', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ prompt }),
+            signal: controller.signal
+          })
+          clearTimeout(timeoutId)
+
+          if (!response.ok) {
+            failedLinksRef.current.add(story.link)
+            continue
+          }
+
+          const data = await response.json()
+          let aiHeadline = ''
+          let aiSummary = ''
+
+          if (data && data.response) {
+            let parsed = null
+            if (typeof data.response === 'object' && data.response !== null) {
+              parsed = data.response
+            } else if (typeof data.response === 'string') {
+              try {
+                parsed = JSON.parse(data.response.trim())
+              } catch (e) {
+                // Heuristic regex backup parser
+                const headlineMatch = data.response.match(/"headline"\s*:\s*"([^"]+)"/)
+                const summaryMatch = data.response.match(/"summary"\s*:\s*"([^"]+)"/)
+                if (headlineMatch && summaryMatch) {
+                  parsed = {
+                    headline: headlineMatch[1],
+                    summary: summaryMatch[1]
+                  }
+                }
+              }
+            }
+
+            if (parsed && parsed.headline && parsed.summary) {
+              aiHeadline = parsed.headline
+              aiSummary = parsed.summary
+            }
+          }
+
+          if (aiHeadline && aiSummary) {
+            const updatedCache = loadAICache()
+            updatedCache[story.link] = {
+              headline: aiHeadline,
+              summary: aiSummary
+            }
+            saveAICache(updatedCache)
+
+            // Dynamically update stories in state so they instantly transition to the AI-enhanced versions
+            setStories(prevStories =>
+              prevStories.map(s =>
+                s.link === story.link
+                  ? { ...s, headline: aiHeadline, summary: aiSummary, isAiEnhanced: true }
+                  : s
+              )
+            )
+          } else {
+            failedLinksRef.current.add(story.link)
+          }
+        } catch (error) {
+          console.warn(`Background AI enhancement failed for: ${story.originalHeadline}`, error)
+          failedLinksRef.current.add(story.link)
+        }
+      }
+    }
+
+    processQueue()
+
+    return () => {
+      isCancelled = true
+    }
+  }, [stories])
 
   // Infinite scroll - load more when near bottom (generate fresh batch)
   useEffect(() => {
