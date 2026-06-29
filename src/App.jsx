@@ -1,203 +1,458 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 
-// ─── Curated Defense Categories & Tags ──────────────────────────────
+// ─── Categories ──────────────────────────────────────────────────────
 const CATEGORIES = [
-  { id: 'all', label: 'Global Intel', icon: '📡', color: 'from-slate-700 to-slate-900', bg: 'bg-slate-500/20 text-slate-300 border-slate-500/30' },
-  { id: 'world', label: 'Geopolitics', icon: '🌐', color: 'from-blue-700 to-slate-800', bg: 'bg-blue-500/20 text-blue-300 border-blue-500/30' },
-  { id: 'politics', label: 'Pentagon & Policy', icon: '🏛️', color: 'from-indigo-900 to-slate-900', bg: 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30' },
-  { id: 'business', label: 'Defense Industry', icon: '💼', color: 'from-emerald-900 to-slate-900', bg: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' },
-  { id: 'tech', label: 'Cyber & C4ISR', icon: '⚡', color: 'from-violet-900 to-slate-900', bg: 'bg-violet-500/20 text-violet-300 border-violet-500/30' },
-  { id: 'sports', label: 'Aerospace & Naval', icon: '🚢', color: 'from-amber-900 to-slate-900', bg: 'bg-amber-500/20 text-amber-300 border-amber-500/30' },
-  { id: 'science', label: 'Space & Strategic', icon: '🚀', color: 'from-cyan-900 to-slate-900', bg: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30' },
-  { id: 'health', label: 'Biosafety', icon: '☣️', color: 'from-rose-900 to-slate-900', bg: 'bg-rose-500/20 text-rose-300 border-rose-500/30' },
-  { id: 'entertainment', label: 'Intel Wire', icon: '👁️‍🗨️', color: 'from-zinc-700 to-zinc-950', bg: 'bg-zinc-500/20 text-zinc-300 border-zinc-500/30' },
+  { id: 'all', label: 'All News', icon: '🔥', color: 'from-red-500 to-orange-500', bg: 'bg-red-50 text-red-700 border-red-200' },
+  { id: 'world', label: 'World', icon: '🌍', color: 'from-blue-600 to-cyan-500', bg: 'bg-blue-50 text-blue-700 border-blue-200' },
+  { id: 'business', label: 'Business', icon: '💼', color: 'from-emerald-600 to-teal-500', bg: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+  { id: 'technology', label: 'Technology', icon: '⚡', color: 'from-indigo-600 to-blue-500', bg: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
+  { id: 'sports', label: 'Sports', icon: '🏆', color: 'from-orange-500 to-amber-400', bg: 'bg-orange-50 text-orange-700 border-orange-200' },
+  { id: 'science', label: 'Science', icon: '🔬', color: 'from-teal-600 to-green-500', bg: 'bg-teal-50 text-teal-700 border-teal-200' },
+  { id: 'health', label: 'Health', icon: '❤️‍🩹', color: 'from-pink-600 to-rose-500', bg: 'bg-pink-50 text-pink-700 border-pink-200' },
+  { id: 'entertainment', label: 'Entertainment', icon: '🎬', color: 'from-fuchsia-600 to-purple-500', bg: 'bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200' },
 ]
 
-const TAGS_BY_CATEGORY = {
-  world: ['NATO', 'Allies', 'Deterrence', 'Strategy'],
-  politics: ['Pentagon', 'Congress', 'Appropriations', 'Procurement'],
-  business: ['Contracts', 'Mergers', 'Acquisitions', 'Logistics'],
-  tech: ['Cybersecurity', 'C4ISR', 'Comms', 'Signal'],
-  sports: ['Maritime', 'Aviation', 'Fleet', 'Carrier'],
-  science: ['Hypersonic', 'Satellites', 'Orbit', 'Radar'],
-  health: ['Biological', 'Chemical', 'TacticalCare', 'Safety'],
-  entertainment: ['ThreatIntel', 'CounterIntelligence', 'Briefings', 'SupplyChain'],
+// ─── Real News Sources with verified URLs and RSS feeds ──────────────
+const NEWS_SOURCES = {
+  world: [
+    { name: 'BBC News', url: 'https://www.bbc.com/news', feed: 'https://feeds.bbci.co.uk/news/world/rss.xml' },
+    { name: 'Reuters', url: 'https://www.reuters.com', feed: 'https://www.reutersagency.com/feed/?best-topics=news&utm_term=global' },
+    { name: 'Al Jazeera', url: 'https://www.aljazeera.com', feed: 'https://www.aljazeera.com/xml/rss/all.xml' },
+  ],
+  business: [
+    { name: 'BBC Business', url: 'https://www.bbc.com/news/business', feed: 'https://feeds.bbci.co.uk/news/business/rss.xml' },
+    { name: 'Reuters Business', url: 'https://www.reuters.com/business/', feed: 'https://www.reutersagency.com/feed/?best-topics=business' },
+  ],
+  technology: [
+    { name: 'BBC Tech', url: 'https://www.bbc.com/news/technology', feed: 'https://feeds.bbci.co.uk/news/technology/rss.xml' },
+    { name: 'TechCrunch', url: 'https://techcrunch.com', feed: 'https://techcrunch.com/feed/' },
+    { name: 'The Verge', url: 'https://www.theverge.com', feed: 'https://www.theverge.com/rss/index.xml' },
+  ],
+  sports: [
+    { name: 'BBC Sport', url: 'https://www.bbc.com/sport', feed: 'https://feeds.bbci.co.uk/sport/rss.xml' },
+    { name: 'ESPN', url: 'https://www.espn.com', feed: 'http://www.espn.com/espn/rss/news/' },
+  ],
+  science: [
+    { name: 'BBC Science', url: 'https://www.bbc.com/news/science_and_environment', feed: 'https://feeds.bbci.co.uk/news/science_and_environment/rss.xml' },
+    { name: 'Science Daily', url: 'https://www.sciencedaily.com', feed: 'https://www.sciencedaily.com/rss/all.xml' },
+  ],
+  health: [
+    { name: 'BBC Health', url: 'https://www.bbc.com/news/health', feed: 'https://feeds.bbci.co.uk/news/health/rss.xml' },
+  ],
+  entertainment: [
+    { name: 'BBC Entertainment', url: 'https://www.bbc.com/news/entertainment_and_arts', feed: 'https://feeds.bbci.co.uk/news/entertainment_and_arts/rss.xml' },
+    { name: 'Variety', url: 'https://variety.com', feed: 'https://variety.com/feed/' },
+  ],
 }
 
-const COUNTRIES = [
-  { id: 'us', label: 'USA', flag: '🇺🇸' },
-  { id: 'uk', label: 'UK', flag: '🇬🇧' },
-  { id: 'eu', label: 'Europe', flag: '🇪🇺' },
-  { id: 'in', label: 'India', flag: '🇮🇳' },
-  { id: 'cn', label: 'China', flag: '🇨🇳' },
-  { id: 'ru', label: 'Russia', flag: '🇷🇺' },
-  { id: 'me', label: 'Middle East', flag: '🌙' },
-  { id: 'africa', label: 'Africa', flag: '🌍' },
-  { id: 'sa', label: 'South America', flag: '🌎' },
-  { id: 'jp', label: 'Japan', flag: '🇯🇵' },
-  { id: 'kr', label: 'Korea', flag: '🇰🇷' },
-  { id: 'au', label: 'Australia', flag: '🇦🇺' },
-]
+// ─── CORS Proxy for RSS Feeds ────────────────────────────────────────
+const PROXY_URL = 'https://api.allorigins.win/raw?url='
 
-// ─── Real Curated Defense Articles Database (With active real URLs) ──
-const REAL_DEFENSE_DATABASE = [
-  {
-    headline: "US Navy to Test High-Power Microwave Weapon Prototype at Sea",
-    summary: "The US Navy plans to test a high-powered microwave weapon prototype aboard an active surface vessel, aiming to defend fleet operations against hostile drone swarms and small unmanned boats.",
-    source: "Defense News",
-    link: "https://www.defensenews.com/naval/2024/04/18/us-navy-to-test-microwave-weapon-prototype-at-sea/",
-    category: "sports",
-    imageUrl: "https://images.unsplash.com/photo-1508098682722-e99c43a406b2?q=80&w=600&auto=format&fit=crop",
-    tags: ["NAVAL", "DEW", "Drones", "Microwave"]
-  },
-  {
-    headline: "Army Fields Stryker-Based Laser Weapon Prototypes for Drone Defense",
-    summary: "The US Army is deploying Stryker combat vehicles fitted with 50-kilowatt laser systems to combat aerial threats, marking a significant transition of directed-energy systems to active theater trials.",
-    source: "Defense News",
-    link: "https://www.defensenews.com/land/2023/04/13/army-to-field-first-drone-hunting-combat-vehicle-prototype/",
-    category: "politics",
-    imageUrl: "https://images.unsplash.com/photo-1541872703-74c5e44368f9?q=80&w=600&auto=format&fit=crop",
-    tags: ["PENTAGON", "Laser", "AirDefense", "Stryker"]
-  },
-  {
-    headline: "Space Force Awards Satellite Tracking Contracts to Build LEO Network",
-    summary: "The Space Development Agency has selected contractors to construct a low-Earth orbit satellite array designed to track advanced hypersonic glide vehicles and report telemetry to defense grids.",
-    source: "SpaceNews",
-    link: "https://spacenews.com/space-development-agency-awards-contracts-for-satellite-tracking-network/",
-    category: "science",
-    imageUrl: "https://images.unsplash.com/photo-1532094349884-543bc11b234d?q=80&w=600&auto=format&fit=crop",
-    tags: ["SPACE", "SDA", "LEO", "Hypersonic"]
-  },
-  {
-    headline: "Lockheed Martin Delivers First SPY-7 Aegis Radar Array to Japan",
-    summary: "Lockheed Martin completed delivery of the first modular SPY-7 solid-state radar antenna array for integration onto Japanese Aegis-equipped destroyers, expanding regional missile defense.",
-    source: "Defense News",
-    link: "https://www.defensenews.com/industry/tech-watch/2023/11/15/lockheed-delivers-first-spy-7-radar-array-for-japanese-aegis-ships/",
-    category: "business",
-    imageUrl: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=600&auto=format&fit=crop",
-    tags: ["INDUSTRY", "Aegis", "Radar", "Lockheed"]
-  },
-  {
-    headline: "DARPA Tests Autonomous Drone Swarms in Urban Combat Mockups",
-    summary: "DARPA's OFFSET program concluded tactical trials showing air and ground unmanned systems coordinating to identify threats and isolate sectors inside simulated urban conflict zones.",
-    source: "C4ISRNET",
-    link: "https://www.c4isrnet.com/unmanned/2021/11/18/darpa-tests-autonomous-drone-swarms-for-urban-search/",
-    category: "tech",
-    imageUrl: "https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=600&auto=format&fit=crop",
-    tags: ["CYBER", "DARPA", "Unmanned", "Swarm"]
-  },
-  {
-    headline: "Poland Finalizes Deal for 32 F-35 Stealth Fighter Jets",
-    summary: "Poland signed a $4.6 billion agreement with the United States to purchase F-35A Lightning II aircraft, accelerating the retirement of Soviet-era combat platforms in Eastern Europe.",
-    source: "Defense News",
-    link: "https://www.defensenews.com/global/europe/2020/01/31/poland-signs-46-billion-deal-for-f-35-fighter-jets/",
-    category: "world",
-    imageUrl: "https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?q=80&w=600&auto=format&fit=crop",
-    tags: ["GEOPOLITICS", "F35", "Poland", "Lockheed"]
-  },
-  {
-    headline: "US Air Force Hypersonic Scramjet Prototype Completes Free Flight Test",
-    summary: "The Air Force Research Laboratory and DARPA completed a successful free flight of the HAWC scramjet vehicle, achieving speeds exceeding Mach 5 at high altitudes.",
-    source: "SpaceNews",
-    link: "https://spacenews.com/darpa-reports-another-successful-hawc-hypersonic-flight-test/",
-    category: "science",
-    imageUrl: "https://images.unsplash.com/photo-1507668077129-56e32842fceb?q=80&w=600&auto=format&fit=crop",
-    tags: ["SPACE", "Scramjet", "Mach5", "DARPA"]
-  },
-  {
-    headline: "C4ISR Net Details New Joint All-Domain Command software Integration",
-    summary: "The Department of Defense successfully tested software layers linking Army ground sensors with Air Force fighter command suites, resolving persistent JADC2 latency gaps.",
-    source: "C4ISRNET",
-    link: "https://www.c4isrnet.com/battle-networks/2023/10/24/pentagon-conducts-major-test-of-all-domain-comms-software/",
-    category: "tech",
-    imageUrl: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=600&auto=format&fit=crop",
-    tags: ["CYBER", "JADC2", "Pentagon", "Software"]
-  },
-  {
-    headline: "US Air Force Awards B-21 Raider Stealth Bomber Production Contract",
-    summary: "Northrop Grumman has received authorization to initiate low-rate initial production of the B-21 Raider stealth bomber following successful flight test profiles.",
-    source: "Defense News",
-    link: "https://www.defensenews.com/air/2024/01/22/b-21-raider-stealth-bomber-in-production-pentagon-confirms/",
-    category: "sports",
-    imageUrl: "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?q=80&w=600&auto=format&fit=crop",
-    tags: ["AEROSPACE", "B21", "Northrop", "Bomber"]
-  },
-  {
-    headline: "Navy Accelerates Deployment of Unmanned Submersibles to Fleet Commands",
-    summary: "Naval Sea Systems Command is speeding up testing of Orca Extra Large Unmanned Undersea Vehicles (XLUUV) to conduct covert mine countermeasure missions.",
-    source: "Defense News",
-    link: "https://www.defensenews.com/naval/2023/12/20/us-navy-takes-delivery-of-first-orca-unmanned-submarine/",
-    category: "sports",
-    imageUrl: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?q=80&w=600&auto=format&fit=crop",
-    tags: ["NAVAL", "UUV", "Orca", "Unmanned"]
-  },
-  {
-    headline: "Strategic Command Conducts Nuclear Readiness Simulation Drills",
-    summary: "US Strategic Command concluded Global Thunder exercises, verifying communications protocols across the nuclear triad including bombers and submarines.",
-    source: "Defense News",
-    link: "https://www.defensenews.com/pentagon/2023/04/11/stratcom-begins-annual-nuclear-command-exercise/",
-    category: "politics",
-    imageUrl: "https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?q=80&w=600&auto=format&fit=crop",
-    tags: ["PENTAGON", "Nuclear", "STRATCOM", "Readiness"]
-  },
-  {
-    headline: "Bio-Defense Centers Standardize Threat Response Equipment Across Bases",
-    summary: "Chemical and Biological Defense commands completed deployment of standardized protective masks and automated threat alert stations at logistics hubs.",
-    source: "Defense News",
-    link: "https://www.defensenews.com/pentagon/2022/10/24/pentagon-launches-biodefense-review-and-posture-realignment/",
-    category: "health",
-    imageUrl: "https://images.unsplash.com/photo-1505751172876-fa1923c5c528?q=80&w=600&auto=format&fit=crop",
-    tags: ["BIOSAFETY", "Biodefense", "Logistics", "Drills"]
-  },
-  {
-    headline: "Defense Industry Consortium Launches Semiconductor Security Initiative",
-    summary: "Leading military hardware suppliers formed an alliance to audit microelectronics supply chains and enforce anti-tamper standards for military chips.",
-    source: "Defense News",
-    link: "https://www.defensenews.com/opinion/commentary/2023/09/20/pentagons-microelectronics-initiative-must-focus-on-secure-packaging/",
-    category: "business",
-    imageUrl: "https://images.unsplash.com/photo-1559526324-4b87b5e36e44?q=80&w=600&auto=format&fit=crop",
-    tags: ["INDUSTRY", "Chips", "SupplyChain", "Security"]
-  },
-  {
-    headline: "UK Ministry of Defence Outlines Strategic Space Intelligence Architecture",
-    summary: "The UK Space Command announced a £1.5 billion investment to construct a dedicated radar imaging satellite constellation for tactical military intelligence.",
-    source: "SpaceNews",
-    link: "https://spacenews.com/uk-space-command-to-procure-optical-and-radar-intelligence-satellites/",
-    category: "world",
-    imageUrl: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=600&auto=format&fit=crop",
-    tags: ["GEOPOLITICS", "UK", "Space", "Constellation"]
-  },
-  {
-    headline: "NATO Secures Cyber Command Shared Intelligence Database",
-    summary: "NATO completed migration of its defensive cyber operational tracking system into a secure distributed ledger, increasing resistance to state-backed hacks.",
-    source: "C4ISRNET",
-    link: "https://www.c4isrnet.com/cyber/2022/11/08/nato-deploys-new-cyber-defense-software-sensors/",
-    category: "tech",
-    imageUrl: "https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?q=80&w=600&auto=format&fit=crop",
-    tags: ["CYBER", "NATO", "Intelligence", "Ledger"]
-  },
-  {
-    headline: "US Air Force Selects Anduril and General Atomics for CCA Prototypes",
-    summary: "The US Air Force awarded contracts to Anduril Industries and General Atomics to design and construct the first flying prototypes of Collaborative Combat Aircraft (CCA) autonomous wingmen.",
-    source: "Defense News",
-    link: "https://www.defensenews.com/air/2024/04/24/air-force-picks-general-atomics-anduril-to-build-cca-autonomous-jets/",
-    category: "politics",
-    imageUrl: "https://images.unsplash.com/photo-1541872703-74c5e44368f9?q=80&w=600&auto=format&fit=crop",
-    tags: ["PENTAGON", "Anduril", "CCA", "Drones"]
-  },
-  {
-    headline: "AUKUS Nations Complete Joint Autonomous Underwater System Trials",
-    summary: "Naval forces from Australia, the United Kingdom, and the United States completed joint trials off the Australian coast, demonstrating unified command of unmanned underwater vehicles.",
-    source: "Defense News",
-    link: "https://www.defensenews.com/naval/2023/12/12/aukus-nations-test-drones-in-undersea-warfare-drills/",
-    category: "world",
-    imageUrl: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=600&auto=format&fit=crop",
-    tags: ["GEOPOLITICS", "AUKUS", "Naval", "Unmanned"]
-  },
-  {
-    headline: "Army Orders Tactical Communications Radios in $1.3 Billion Project",
-    summary: "The US Army awarded multiple contracts for hand-held, manpack, and small-form-fit tactical radios to support field communications in contested electronic warfare environments.",
-    source: "C4ISRNET",
+// ─── Share Component ────────────────────────────────────────────────
+function ShareButton({ headline, summary, link }) {
+  const [copied, setCopied] = useState(false)
+
+  const handleShare = async () => {
+    const text = `${headline}\n\n${summary}\n\nRead more: ${link}`
+    if (navigator.share) {
+      try { await navigator.share({ title: headline, text, url: link }) } catch {}
+    } else {
+      try {
+        await navigator.clipboard.writeText(text)
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
+      } catch {}
+    }
+  }
+
+  return (
+    <button onClick={handleShare} className="flex items-center gap-1.5 text-xs font-medium text-gray-400 hover:text-blue-600 transition-colors">
+      {copied ? (
+        <>
+          <svg className="w-3.5 h-3.5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+          <span className="text-green-500">Copied!</span>
+        </>
+      ) : (
+        <>
+          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
+          <span>Share</span>
+        </>
+      )}
+    </button>
+  )
+}
+
+// ─── News Card ──────────────────────────────────────────────────────
+function NewsCard({ story }) {
+  const catInfo = CATEGORIES.find(c => c.id === story.category) || CATEGORIES[0]
+
+  return (
+    <article className={`relative bg-gradient-to-br ${catInfo.color} h-full w-full flex flex-col justify-between p-6 rounded-2xl border border-white/10 overflow-hidden shadow-2xl group`}>
+      {/* Ambient glow effects */}
+      <div className="absolute inset-0 opacity-30 pointer-events-none">
+        <div className="absolute top-[-20%] right-[-10%] w-[80%] h-[75%] bg-white/10 rounded-full blur-[120px]" />
+        <div className="absolute bottom-[-10%] left-[-20%] w-[70%] h-[60%] bg-white/5 rounded-full blur-[100px]" />
+      </div>
+
+      {/* Top Header metadata */}
+      <div className="relative z-10 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <span className="text-2xl drop-shadow-lg">{catInfo.icon}</span>
+          <div className="h-4 w-px bg-white/20" />
+          <span className="font-bold text-base text-white/95 tracking-wide uppercase">{story.source}</span>
+        </div>
+        <ShareButton headline={story.headline} summary={story.summary} link={story.link} />
+      </div>
+
+      {/* Main Content Area (Headline + Summary) */}
+      <div className="relative z-10 flex-1 flex flex-col justify-center my-4 space-y-4 max-w-xl mx-auto w-full">
+        {/* Dynamic decorative category label */}
+        <span className={`self-start text-[10px] uppercase font-bold tracking-widest px-2.5 py-1 rounded border border-white/10 bg-white/5 text-white/60`}>
+          {catInfo.label}
+        </span>
+        
+        <h2 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-white leading-tight drop-shadow-lg select-text">
+          {story.headline}
+        </h2>
+        
+        <p className="text-sm sm:text-base text-white/80 leading-relaxed drop-shadow-md select-text line-clamp-6">
+          {story.summary}
+        </p>
+      </div>
+
+      {/* Bottom CTA / Action */}
+      <div className="relative z-10 flex items-center justify-between pt-4 border-t border-white/10">
+        <a 
+          href={story.link} 
+          target="_blank" 
+          rel="noopener noreferrer" 
+          className="inline-flex items-center gap-2 text-sm font-bold text-white bg-gradient-to-r from-violet-600/80 to-indigo-600/80 hover:from-violet-500/90 hover:to-indigo-500/90 active:scale-[0.97] transition-all backdrop-blur-md border border-white/20 px-5 py-2.5 rounded-full shadow-lg shadow-purple-900/30"
+        >
+          <span>Read Full Story</span>
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+          </svg>
+        </a>
+        <span className="text-xs text-white/40 font-semibold">{story.time}</span>
+      </div>
+    </article>
+  )
+}
+
+// ─── Skeleton Card ──────────────────────────────────────────────────
+function SkeletonCard() {
+  return (
+    <div className="relative bg-gradient-to-br from-slate-900 to-gray-950 h-full w-full flex flex-col justify-between p-6 rounded-2xl overflow-hidden shadow-lg animate-pulse border border-white/10">
+      <div className="absolute inset-0 opacity-20"><div className="absolute top-[-40%] right-[-20%] w-[60%] h-[60%] bg-white rounded-full blur-[120px]" /></div>
+      <div className="relative z-10 flex-1 flex flex-col justify-center my-4 space-y-4 max-w-xl mx-auto w-full">
+        <div className="flex items-center gap-3 mb-4"><div className="w-7 h-7 bg-white/10 rounded-lg" /><div className="h-5 w-px bg-white/20" /><div className="h-4 w-20 bg-white/10 rounded" /></div>
+        <div className="h-8 w-full bg-white/10 rounded mb-3" />
+        <div className="h-8 w-3/4 bg-white/10 rounded mb-4" />
+        <div className="space-y-2 mb-5"><div className="h-4 w-full bg-white/5 rounded" /><div className="h-4 w-5/6 bg-white/5 rounded" /></div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Explore Page ────────────────────────────────────────────────────
+function ExplorePage({ onSelectCategory, selectedCategory }) {
+  return (
+    <div className="max-w-2xl mx-auto px-4 py-10">
+      {/* Header */}
+      <div className="text-center mb-12">
+        <h1 className="text-3xl font-extrabold text-white mb-2">Explore Topics</h1>
+        <p className="text-gray-400">Tap a category to filter your feed — stories refresh instantly</p>
+      </div>
+
+      {/* Categories Grid */}
+      <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 mb-8">
+        {CATEGORIES.map(cat => (
+          <button
+            key={cat.id}
+            onClick={() => onSelectCategory(cat.id)}
+            className={`relative p-4 rounded-2xl border transition-all duration-300 text-center group ${
+              selectedCategory === cat.id
+                ? `border-transparent bg-gradient-to-br ${cat.color} text-white shadow-xl scale-[1.05] ring-2 ring-white/20`
+                : 'border-gray-700/50 bg-gray-800/50 hover:bg-gray-700/60 hover:border-gray-600'
+            }`}
+          >
+            <span className="text-3xl block mb-2">{cat.icon}</span>
+            <span className={`font-bold text-xs ${selectedCategory === cat.id ? 'text-white' : 'text-gray-300'}`}>{cat.label}</span>
+            {selectedCategory === cat.id && (
+              <div className="absolute top-2 right-2">
+                <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
+              </div>
+            )}
+          </button>
+        ))}
+      </div>
+
+      {/* Selected indicator */}
+      <div className="p-4 bg-purple-500/10 rounded-xl border border-purple-500/20">
+        <p className="text-sm text-purple-300 font-medium flex items-center gap-2">
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+          {selectedCategory === 'all' ? 'Showing all stories across every topic and region.' : `Filtering to ${CATEGORIES.find(c => c.id === selectedCategory)?.label} stories. Scroll down for personalized content.`}
+        </p>
+      </div>
+    </div>
+  )
+}
+
+// ─── Main App ────────────────────────────────────────────────────────
+function App() {
+  const [activeTab, setActiveTab] = useState('feed') // 'feed' | 'explore'
+  const [stories, setStories] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
+  const [page, setPage] = useState(0)
+  const [selectedCategory, setSelectedCategory] = useState('all')
+  const observerTarget = useRef(null)
+
+  // Parse RSS XML to stories
+  const parseRSSFeed = useCallback((xmlText, sourceName, category) => {
+    if (!xmlText || typeof xmlText !== 'string') return []
+    
+    try {
+      const parser = new DOMParser()
+      const doc = parser.parseFromString(xmlText, 'text/xml')
+      const items = doc.querySelectorAll('item')
+      const stories = []
+
+      items.forEach((item) => {
+        let title = item.querySelector('title')?.textContent?.trim() || ''
+        let description = item.querySelector('description')?.textContent || ''
+        
+        // Strip HTML tags from description
+        description = description.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;/g, "'").trim()
+        
+        const link = item.querySelector('link')?.textContent?.trim() || ''
+        const pubDate = item.querySelector('pubDate')?.textContent || ''
+
+        if (title && description.length > 20) {
+          // Truncate summary to ~280 chars for InShorts-style brevity
+          const summary = description.length > 280 ? description.substring(0, 280) + '...' : description
+          
+          stories.push({
+            id: `${sourceName}-${title.substring(0, 30)}-${pubDate}`,
+            headline: title,
+            summary,
+            source: sourceName,
+            link: link.startsWith('http') ? link : `https://${link}`,
+            category,
+            time: pubDate ? formatTimeAgo(new Date(pubDate)) : 'Just now',
+          })
+        }
+      })
+
+      return stories
+    } catch (e) {
+      console.warn(`Failed to parse RSS feed from ${sourceName}:`, e)
+      return []
+    }
+  }, [])
+
+  // Format time ago
+  const formatTimeAgo = (date) => {
+    if (!date || isNaN(date)) return 'Just now'
+    const now = new Date()
+    const diffMs = now - date
+    const diffMins = Math.floor(diffMs / 60000)
+    if (diffMins < 1) return 'Just now'
+    if (diffMins < 60) return `${diffMins}m ago`
+    const diffHours = Math.floor(diffMins / 60)
+    if (diffHours < 24) return `${diffHours}h ago`
+    const diffDays = Math.floor(diffHours / 24)
+    return `${diffDays}d ago`
+  }
+
+  // Fetch stories from RSS feeds
+  const fetchStories = useCallback(async () => {
+    setLoading(true)
+    
+    try {
+      let urlsToFetch = []
+      
+      if (selectedCategory === 'all') {
+        // Fetch all category feeds
+        Object.entries(NEWS_SOURCES).forEach(([cat, sources]) => {
+          sources.forEach(source => urlsToFetch.push({ url: source.feed, name: source.name, category: cat }))
+        })
+      } else {
+        const sources = NEWS_SOURCES[selectedCategory] || []
+        sources.forEach(source => urlsToFetch.push({ url: source.feed, name: source.name, category: selectedCategory }))
+      }
+
+      // Fetch all feeds in parallel with timeout
+      const fetchPromises = urlsToFetch.map(async ({ url, name, category }) => {
+        try {
+          const proxyUrl = `${PROXY_URL}${encodeURIComponent(url)}`
+          const response = await fetch(proxyUrl, { signal: AbortSignal.timeout(5000) }) // 5s timeout per feed
+          if (!response.ok) return []
+          const text = await response.text()
+          return parseRSSFeed(text, name, category)
+        } catch (e) {
+          console.warn(`Failed to fetch ${name}:`, e.message)
+          return []
+        }
+      })
+
+      const results = await Promise.all(fetchPromises)
+      let allFetched = results.flat()
+
+      // Remove duplicates by headline
+      const seen = new Set()
+      allFetched = allFetched.filter(story => {
+        if (seen.has(story.headline)) return false
+        seen.add(story.headline)
+        return true
+      })
+
+      setStories(allFetched)
+    } catch (err) {
+      console.warn('Failed to fetch stories:', err)
+    } finally {
+      setLoading(false)
+    }
+  }, [selectedCategory, parseRSSFeed])
+
+  // Load stories on mount or category change
+  useEffect(() => {
+    fetchStories()
+  }, [fetchStories])
+
+  // Infinite scroll - load more when near bottom (generate fresh batch)
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => { if (entries[0].isIntersecting && !loading) setPage(p => p + 1) },
+      { threshold: 0.5 }
+    )
+    if (observerTarget.current) observer.observe(observerTarget.current)
+    return () => observer.disconnect()
+  }, [loading])
+
+  // When page increases, fetch again for fresh content
+  useEffect(() => {
+    if (page > 0 && !loading) {
+      fetchStories()
+    }
+  }, [page, fetchStories, loading])
+
+  const handleRefresh = () => {
+    setRefreshing(true)
+    setPage(0)
+    fetchStories()
+    setTimeout(() => setRefreshing(false), 600)
+  }
+
+  const handleExploreSelect = (catId) => {
+    setSelectedCategory(catId)
+    setActiveTab('feed')
+    setPage(0)
+  }
+
+  return (
+    <div className="h-screen w-screen overflow-hidden flex flex-col bg-gradient-to-b from-gray-950 via-slate-950 to-black select-none">
+      {/* Header */}
+      <header className="shrink-0 bg-gray-950/80 backdrop-blur-xl border-b border-white/10 shadow-lg shadow-black/20">
+        <div className="max-w-2xl mx-auto px-4 py-3">
+          <div className="flex items-center justify-between mb-3">
+            {/* Logo */}
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-violet-500 via-purple-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/30 ring-1 ring-white/20">
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+              </div>
+              <div>
+                <h1 className="text-xl font-extrabold bg-gradient-to-r from-violet-400 via-purple-400 to-indigo-400 bg-clip-text text-transparent tracking-tight">NewsPulse</h1>
+                <p className="text-[10px] font-medium text-gray-500 uppercase tracking-widest">Real News, In Brief</p>
+              </div>
+            </div>
+
+            {/* Refresh */}
+            <button onClick={handleRefresh} disabled={refreshing} className={`flex items-center gap-2 px-3 py-2 rounded-xl font-medium text-sm transition-all ${refreshing ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30' : 'bg-white/5 hover:bg-purple-500/10 text-gray-400 hover:text-purple-400 border border-white/10 active:scale-95'}`}>
+              <svg className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+              <span className="hidden sm:inline">{refreshing ? 'Refreshing...' : 'Refresh'}</span>
+            </button>
+          </div>
+
+          {/* Tab Navigation */}
+          <nav className="flex gap-1 bg-white/5 p-1 rounded-xl border border-white/10">
+            <button onClick={() => { setActiveTab('feed'); setPage(0) }} className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold transition-all ${activeTab === 'feed' ? 'bg-white/10 text-purple-400 shadow-sm border border-white/10' : 'text-gray-500 hover:text-gray-300'}`}>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" /></svg>
+              Feed
+            </button>
+            <button onClick={() => setActiveTab('explore')} className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold transition-all ${activeTab === 'explore' ? 'bg-white/10 text-purple-400 shadow-sm border border-white/10' : 'text-gray-500 hover:text-gray-300'}`}>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+              Explore
+            </button>
+          </nav>
+        </div>
+      </header>
+
+      {/* Content */}
+      <div className="flex-1 overflow-hidden">
+        {activeTab === 'explore' ? (
+          <div className="h-full w-full overflow-y-auto no-scrollbar">
+            <ExplorePage onSelectCategory={handleExploreSelect} selectedCategory={selectedCategory} />
+          </div>
+        ) : (
+          <div className="h-full w-full max-w-2xl mx-auto px-4 py-4 flex flex-col overflow-hidden">
+            {/* Active filter badge */}
+            {selectedCategory !== 'all' && (
+              <div className="flex items-center gap-2 mb-3 shrink-0">
+                <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border ${CATEGORIES.find(c => c.id === selectedCategory)?.bg}`}>
+                  {CATEGORIES.find(c => c.id === selectedCategory)?.icon} {CATEGORIES.find(c => c.id === selectedCategory)?.label}
+                </span>
+                <button onClick={() => handleExploreSelect('all')} className="text-xs text-gray-500 hover:text-red-400 transition-colors">Clear filter</button>
+              </div>
+            )}
+
+            {/* Stories Feed */}
+            <div className="flex-1 w-full overflow-y-auto no-scrollbar flex flex-col gap-4 pb-4">
+              {loading && stories.length === 0 ? (
+                // Show skeletons while loading initially
+                Array.from({ length: 3 }).map((_, i) => (
+                  <div key={`skeleton-${i}`} className="h-[calc(100vh-200px)] min-h-[400px] w-full shrink-0">
+                    <SkeletonCard />
+                  </div>
+                ))
+              ) : stories.length > 0 ? (
+                stories.map(story => (
+                  <div key={story.id} className="h-[calc(100vh-200px)] min-h-[400px] max-h-[750px] w-full shrink-0">
+                    <NewsCard story={story} />
+                  </div>
+                ))
+              ) : (
+                // Empty state when no stories loaded
+                <div className="flex flex-col items-center justify-center h-full text-gray-400">
+                  <svg className="w-16 h-16 mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                  <p className="text-lg font-semibold mb-2">No stories found</p>
+                  <p className="text-sm text-gray-500 mb-4">Check your internet connection and try again</p>
+                  <button onClick={handleRefresh} className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg font-medium transition-colors">Retry</button>
+                </div>
+              )}
+
+              {/* Observer marker for infinite scroll */}
+              {stories.length > 0 && (
+                <div ref={observerTarget} className="h-10 shrink-0 w-full flex items-center justify-center text-xs font-bold text-gray-500 uppercase tracking-widest">
+                  Loading more stories...
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Footer */}
+      <footer className="shrink-0 py-2.5 border-t border-white/5 bg-gray-950/90 text-center z-10">
+        <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">
+          Powered by BBC News, Reuters, Al Jazeera & more • Real-time RSS feeds
+        </p>
+      </footer>
+    </div>
+  )
+}
+
+export default App
     link: "https://www.c4isrnet.com/battle-networks/2022/04/18/us-army-awards-13-billion-in-tactical-radio-contracts/",
     category: "tech",
     imageUrl: "https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=600&auto=format&fit=crop",
