@@ -86,7 +86,23 @@ const COUNTRIES = [
   { id: 'ca', label: 'Canada', icon: '🇨🇦' },
   { id: 'au', label: 'Australia', icon: '🇦🇺' },
   { id: 'de', label: 'Germany', icon: '🇩🇪' },
-  { id: 'sg', label: 'Singapore', icon: '🇸🇬' }
+  { id: 'sg', label: 'Singapore', icon: '🇸🇬' },
+  { id: 'fr', label: 'France', icon: '🇫🇷' },
+  { id: 'jp', label: 'Japan', icon: '🇯🇵' },
+  { id: 'cn', label: 'China', icon: '🇨🇳' },
+  { id: 'br', label: 'Brazil', icon: '🇧🇷' },
+  { id: 'za', label: 'South Africa', icon: '🇿🇦' },
+  { id: 'ae', label: 'United Arab Emirates', icon: '🇦🇪' },
+  { id: 'il', label: 'Israel', icon: '🇮🇱' },
+  { id: 'kr', label: 'South Korea', icon: '🇰🇷' },
+  { id: 'it', label: 'Italy', icon: '🇮🇹' },
+  { id: 'es', label: 'Spain', icon: '🇪🇸' },
+  { id: 'mx', label: 'Mexico', icon: '🇲🇽' },
+  { id: 'sa', label: 'Saudi Arabia', icon: '🇸🇦' },
+  { id: 'tr', label: 'Turkey', icon: '🇹🇷' },
+  { id: 'id', label: 'Indonesia', icon: '🇮🇩' },
+  { id: 'nz', label: 'New Zealand', icon: '🇳🇿' },
+  { id: 'ru', label: 'Russia', icon: '🇷🇺' }
 ]
 
 const COUNTRY_WORLD_FEEDS = {
@@ -122,6 +138,54 @@ const COUNTRY_WORLD_FEEDS = {
   ],
   sg: [
     { name: 'Channel News Asia', feed: 'https://www.channelnewsasia.com/rss/cna/news.xml' }
+  ],
+  fr: [
+    { name: 'France 24 English', feed: 'https://www.france24.com/en/rss' }
+  ],
+  jp: [
+    { name: 'NHK World Japan', feed: 'https://www3.nhk.or.jp/nhkworld/nhknews/english/index.xml' }
+  ],
+  cn: [
+    { name: 'China Daily World', feed: 'https://www.chinadaily.com.cn/rss/world.xml' }
+  ],
+  br: [
+    { name: 'Brazil Reports', feed: 'https://brazilreports.com/feed' }
+  ],
+  za: [
+    { name: 'Daily Maverick SA', feed: 'https://www.dailymaverick.co.za/feed/' }
+  ],
+  ae: [
+    { name: 'The National UAE', feed: 'https://www.thenationalnews.com/rss/' }
+  ],
+  il: [
+    { name: 'Haaretz English', feed: 'https://www.haaretz.com/cmlLink/email-rss-haaretz-news-1.5173322' }
+  ],
+  kr: [
+    { name: 'Yonhap News Korea', feed: 'https://en.yna.co.kr/RSS/index.xml' }
+  ],
+  it: [
+    { name: 'ANSA English Italy', feed: 'https://www.ansa.it/english/news/news.xml' }
+  ],
+  es: [
+    { name: 'El Pais English Spain', feed: 'https://english.elpais.com/rss/' }
+  ],
+  mx: [
+    { name: 'Mexico News Daily', feed: 'https://mexiconewsdaily.com/feed/' }
+  ],
+  sa: [
+    { name: 'Arab News Saudi', feed: 'https://www.arabnews.com/rss.xml' }
+  ],
+  tr: [
+    { name: 'Daily Sabah Turkey', feed: 'https://www.dailysabah.com/rss/' }
+  ],
+  id: [
+    { name: 'Jakarta Post Indonesia', feed: 'https://www.thejakartapost.com/feed' }
+  ],
+  nz: [
+    { name: 'RNZ News NZ', feed: 'https://www.rnz.co.nz/rss/news.xml' }
+  ],
+  ru: [
+    { name: 'Moscow Times Russia', feed: 'https://www.themoscowtimes.com/feeds/rss' }
   ]
 }
 
@@ -267,7 +331,7 @@ function NewsCard({ story }) {
           {story.headline}
         </h2>
         
-        <p className="text-sm sm:text-base text-white/80 leading-relaxed drop-shadow-md select-text line-clamp-6">
+        <p className="text-xs sm:text-sm text-white/85 leading-relaxed drop-shadow-md select-text line-clamp-none overflow-y-auto max-h-[160px] pr-1.5 no-scrollbar">
           {story.summary}
         </p>
       </div>
@@ -490,24 +554,21 @@ function ExplorePage({
           </h3>
           <p className="text-[10px] text-gray-500">Loads customized local intelligence feeds for the World News sector</p>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            {COUNTRIES.map(c => {
-              const isSelected = tempCountry === c.id
-              return (
-                <button
-                  key={c.id}
-                  onClick={() => setTempCountry(c.id)}
-                  className={`flex items-center gap-2 p-2.5 rounded-xl border text-left transition-all active:scale-95 ${
-                    isSelected
-                      ? `border-transparent bg-gradient-to-r ${activeTheme.color} text-white shadow-md`
-                      : 'border-white/5 bg-gray-900/25 hover:bg-gray-800/30 text-gray-400 hover:text-gray-300'
-                  }`}
-                >
-                  <span className="text-base">{c.icon}</span>
-                  <span className="font-bold text-[10px] uppercase tracking-wider truncate">{c.label}</span>
-                </button>
-              )
-            })}
+          <div className="relative">
+            <select
+              value={tempCountry}
+              onChange={(e) => setTempCountry(e.target.value)}
+              className="w-full bg-gray-900/50 border border-white/10 hover:border-white/20 text-gray-300 text-xs font-bold uppercase tracking-wider rounded-xl p-3.5 outline-none transition-all cursor-pointer focus:ring-1 focus:ring-white/20 appearance-none"
+            >
+              {COUNTRIES.map(c => (
+                <option key={c.id} value={c.id} className="bg-gray-950 text-gray-300 py-2">
+                  {c.icon} {c.label}
+                </option>
+              ))}
+            </select>
+            <div className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-gray-400">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" /></svg>
+            </div>
           </div>
         </div>
 
@@ -959,7 +1020,7 @@ function App() {
           await new Promise(resolve => setTimeout(resolve, 1000))
           if (isCancelled) break
 
-          const prompt = `Rewrite the following news article title and description into a catchy headline and a comprehensive, detailed 3-4 sentence paragraph summary (detailing the event fully so that the reader doesn't need to read the full article). Format the response strictly as a JSON object with keys "headline" and "summary" like this: {"headline": "...", "summary": "..."}. Do not include any other text, markdown code blocks, or explanations. Just raw JSON.
+          const prompt = `Rewrite the following news article title and description into a catchy, engaging headline and a highly detailed, comprehensive 4-5 sentence summary (around 80-120 words). The summary MUST cover the key facts: Who was involved, What occurred, Where and When it took place, and Why/How it happened. Include any essential numbers, quotes, background context, or impacts, ensuring it serves as a complete stand-alone brief that fully informs the reader. Format the response strictly as a JSON object with keys "headline" and "summary" like this: {"headline": "...", "summary": "..."}. Do not include any other text, markdown code blocks, or explanations. Just raw JSON.
 Title: ${story.originalHeadline}
 Description: ${story.originalSummary}`
 
