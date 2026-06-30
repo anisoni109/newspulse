@@ -1,0 +1,41 @@
+require('dotenv').config();
+const express = require('express');
+const cors = require('cors');
+const routes = require('./routes');
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// Middleware
+app.use(cors());
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true }));
+
+// Routes
+app.use('/api', routes);
+
+// Health check
+app.get('/', (req, res) => {
+  res.json({ 
+    message: 'NewsPulse API Server Running',
+    version: '1.0.0',
+    endpoints: {
+      stories: '/api/stories',
+      adminStories: '/api/stories/admin',
+      stats: '/api/stats',
+      categories: '/api/categories'
+    }
+  });
+});
+
+// Error handling
+app.use((err, req, res, next) => {
+  console.error('Error:', err);
+  res.status(500).json({ error: 'Internal server error' });
+});
+
+app.listen(PORT, () => {
+  console.log(`\n🚀 NewsPulse Server running on http://localhost:${PORT}`);
+  console.log(`📊 Admin Dashboard will be at http://localhost:3001`);
+  console.log(`🔑 Default admin credentials: admin / admin123\n`);
+});

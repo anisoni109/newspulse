@@ -189,8 +189,12 @@ const COUNTRY_WORLD_FEEDS = {
   ]
 }
 
-// ─── CORS Proxy for RSS Feeds ────────────────────────────────────────
-const PROXY_URL = 'https://api.allorigins.win/raw?url='
+// ─── CORS Proxies for RSS Feeds (multiple fallbacks) ────────────────────────────────
+const PROXY_URLS = [
+  'https://api.allorigins.win/raw?url=',
+  'https://corsproxy.io/?',
+  'https://api.codetabs.com/v1/proxy?quest='
+]
 
 // ─── Country-specific sources per category ───────────────────────────
 function getCountrySources(country, category) {
@@ -603,7 +607,7 @@ const COUNTRY_CATEGORY_FEEDS = {
 }
 
 // ─── Share Component — shares from your website, not the original article ──
-function ShareButton({ headline, summary, storyId: propStoryId }) {
+function ShareButton({ headline, summary, storyId: propStoryId, compact = false }) {
   const [copied, setCopied] = useState(false)
 
   // Generate a unique shareable URL for this story on your website
@@ -626,6 +630,18 @@ function ShareButton({ headline, summary, storyId: propStoryId }) {
     }
   }
 
+  if (compact) {
+    return (
+      <button onClick={handleShare} className="p-2 rounded-full hover:bg-white/10 text-white/60 hover:text-white transition-all active:scale-90" title="Share">
+        {copied ? (
+          <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+        ) : (
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
+        )}
+      </button>
+    )
+  }
+
   return (
     <button onClick={handleShare} className="flex items-center gap-1.5 text-xs font-medium text-white/60 hover:text-white transition-colors">
       {copied ? (
@@ -643,8 +659,8 @@ function ShareButton({ headline, summary, storyId: propStoryId }) {
   )
 }
 
-// ─── Vote Buttons Component ────────────────────────────────────────
-function VoteButtons({ storyId }) {
+// ─── Vote Buttons Component (with compact mode for right-side bar) ────────────────
+function VoteButtons({ storyId, compact = false }) {
   const [upvotes, setUpvotes] = useState(() => {
     const votes = JSON.parse(localStorage.getItem('NEWS_VOTES') || '{}')
     return votes[storyId]?.up || Math.floor(Math.random() * 50) + 10
@@ -686,6 +702,20 @@ function VoteButtons({ storyId }) {
     const votes = JSON.parse(localStorage.getItem('NEWS_VOTES') || '{}')
     votes[storyId] = { up: newVote === 'up' ? upvotes + (userVote !== 'up' ? 1 : 0) : Math.max(0, upvotes - (userVote === 'up' ? 1 : 0)), down: newVote === 'down' ? downvotes + (userVote !== 'down' ? 1 : 0) : Math.max(0, downvotes - (userVote === 'down' ? 1 : 0)), vote: newVote }
     localStorage.setItem('NEWS_VOTES', JSON.stringify(votes))
+  }
+
+  if (compact) {
+    return (
+      <div className="flex flex-col items-center gap-0.5">
+        <button onClick={handleUpvote} className={`p-1.5 rounded-full transition-all active:scale-90 ${userVote === 'up' ? 'text-green-400' : 'text-white/50 hover:text-green-400'}`}>
+          <svg className="w-4 h-4" fill={userVote === 'up' ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" /></svg>
+        </button>
+        <span className={`text-[9px] font-bold ${userVote === 'up' ? 'text-green-400' : userVote === 'down' ? 'text-red-400' : 'text-white/40'}`}>{upvotes - downvotes}</span>
+        <button onClick={handleDownvote} className={`p-1.5 rounded-full transition-all active:scale-90 ${userVote === 'down' ? 'text-red-400' : 'text-white/50 hover:text-red-400'}`}>
+          <svg className="w-4 h-4" fill={userVote === 'down' ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+        </button>
+      </div>
+    )
   }
 
   return (
@@ -987,6 +1017,11 @@ function NewsCard({ story, appTheme = 'violet', enableTranslation = true }) {
   const [isNarrating, setIsNarrating] = useState(false)
   const utteranceRef = useRef(null)
 
+  // Local state for Hindi translations so component re-renders when fetched
+  const [hindiHeadline, setHindiHeadline] = useState(story.hindiHeadline || '')
+  const [hindiSummary, setHindiSummary] = useState(story.hindiSummary || '')
+  const [hindiExtendedSummary, setHindiExtendedSummary] = useState(story.hindiExtendedSummary || [])
+
   const activeTheme = THEMES.find(t => t.id === appTheme) || THEMES[0]
   const storyId = story.id || contentHash(story.originalHeadline + story.originalSummary)
 
@@ -1003,31 +1038,60 @@ function NewsCard({ story, appTheme = 'violet', enableTranslation = true }) {
       return
     }
 
-    // Check localStorage cache first with content-based key
-    const cached = story.hindiSummary || localStorage.getItem(translationCacheKey)
-    if (cached && !translating) {
+    // Check story object first (instant - no API call needed)
+    if ((hindiSummary || story.hindiSummary) && !translating) {
       if (isNarrating) {
         window.speechSynthesis.cancel()
         setIsNarrating(false)
       }
-      // Restore from cache into story object
-      try {
-        const cachedData = JSON.parse(cached)
-        story.hindiHeadline = cachedData.hindiHeadline || ''
-        story.hindiSummary = cachedData.hindiSummary || ''
-        story.hindiExtendedSummary = cachedData.hindiExtendedSummary || []
-        story.extendedSummary = cachedData.extendedSummary || []
-      } catch (e) {}
       setCardLang('hi')
       return
     }
 
+    // Check localStorage cache with content-based key
+    const cached = localStorage.getItem(translationCacheKey)
+    if (cached && !translating) {
+      try {
+        const cachedData = JSON.parse(cached)
+        setHindiHeadline(cachedData.hindiHeadline || '')
+        setHindiSummary(cachedData.hindiSummary || '')
+        setHindiExtendedSummary(cachedData.hindiExtendedSummary || [])
+        
+        if (isNarrating) {
+          window.speechSynthesis.cancel()
+          setIsNarrating(false)
+        }
+        setCardLang('hi')
+        return
+      } catch (e) {}
+    }
+
     // Only translate if enableTranslation is true and we don't have a cache hit
-    if (!enableTranslation && !cached) return
+    if (!enableTranslation && !(hindiSummary || story.hindiSummary) && !cached) return
 
     setTranslating(true)
     try {
-      const prompt = `Translate and rewrite the following news article title and description. You must return a JSON object with keys "headline" (English headline), "summary" (English detailed 4-5 sentence summary), "extendedSummary" (an array of 3 detailed English bullet points with statistics/figures), "hindiHeadline" (Hindi translation of the headline), "hindiSummary" (Hindi translation of the summary), and "hindiExtendedSummary" (an array of 3 detailed Hindi bullet points of the extended summary). Do not include any other text, markdown, or code blocks. Just raw JSON.
+      const prompt = `You are a professional Hindi translator. Translate the following news article title and description into proper, complete Hindi sentences written in Devanagari script.
+
+IMPORTANT RULES:
+1. hindiHeadline: Must be a complete headline in Hindi (5-10 words minimum)
+2. hindiSummary: Must be 3-4 complete Hindi sentences totaling at least 60 characters
+3. hindiExtendedSummary: Array of exactly 3 Hindi bullet points, each must be a full sentence (minimum 8 words each)
+4. If the input is short, expand it naturally with relevant context
+5. NEVER return one-word translations - always use complete sentences
+
+Return ONLY valid JSON with these exact keys:
+{
+  "headline": "English headline",
+  "summary": "Detailed English summary paragraph (3-4 sentences)",
+  "extendedSummary": ["Bullet 1", "Bullet 2", "Bullet 3"],
+  "hindiHeadline": "पूरा हिंदी शीर्षक यहाँ लिखें",
+  "hindiSummary": "यहाँ विस्तृत हिंदी सारांश लिखें। कम से कम तीन वाक्य होने चाहिए। प्रत्येक वाक्य पूर्ण होना चाहिए।",
+  "hindiExtendedSummary": ["बुलेट पॉइंट 1 पूर्ण वाक्य", "बुलेट पॉइंट 2 पूर्ण वाक्य", "बुलेट पॉइंट 3 पूर्ण वाक्य"]
+}
+
+DO NOT include any markdown, code blocks, or explanations. Return ONLY raw JSON.
+
 Title: ${story.originalHeadline}
 Description: ${story.originalSummary}`
 
@@ -1047,11 +1111,10 @@ Description: ${story.originalSummary}`
             try { parsed = JSON.parse(data.response.trim()) } catch (e) {}
           }
           if (parsed && parsed.hindiSummary) {
-            // Update in-place properties (modifying active props)
-            story.hindiHeadline = parsed.hindiHeadline
-            story.hindiSummary = parsed.hindiSummary
-            story.hindiExtendedSummary = parsed.hindiExtendedSummary
-            story.extendedSummary = parsed.extendedSummary || []
+            // Update local state to trigger re-render
+            setHindiHeadline(parsed.hindiHeadline || '')
+            setHindiSummary(parsed.hindiSummary)
+            setHindiExtendedSummary(parsed.hindiExtendedSummary || [])
 
             // Save to cache with content-based key for instant future access
             try {
@@ -1085,12 +1148,112 @@ Description: ${story.originalSummary}`
     }
   }
 
+  // Pre-fetch Hindi translations for stories that don't have them yet
+  useEffect(() => {
+    const hasHindi = (hindiSummary || story.hindiSummary) && (hindiSummary || story.hindiSummary).length > 10
+    if (!enableTranslation || hasHindi) return
+    
+    const cached = localStorage.getItem(translationCacheKey)
+    if (cached) {
+      try {
+        const cachedData = JSON.parse(cached)
+        if (cachedData.hindiHeadline && cachedData.hindiSummary && cachedData.hindiSummary.length > 10) {
+          setHindiHeadline(cachedData.hindiHeadline)
+          setHindiSummary(cachedData.hindiSummary)
+          setHindiExtendedSummary(cachedData.hindiExtendedSummary || [])
+        }
+      } catch (e) {}
+    } else {
+      // Auto-fetch Hindi in background when card mounts and translation is enabled
+      ;(async () => {
+        try {
+          const prompt = `You are a professional Hindi translator. Translate the following news article into proper, complete Hindi sentences written in Devanagari script.
+
+CRITICAL RULES:
+1. hindiHeadline: Complete Hindi headline (minimum 5 words)
+2. hindiSummary: At least 3 full Hindi sentences totaling 80+ characters
+3. NEVER return one-word or short phrase translations
+4. Each sentence must be grammatically complete with subject and predicate
+
+Return ONLY valid JSON:
+{
+  "hindiHeadline": "यहाँ पूर्ण हिंदी शीर्षक लिखें",
+  "hindiSummary": "यहाँ कम से कम तीन पूर्ण वाक्यों में सारांश लिखें। प्रत्येक वाक्य में विषय और क्रिया होनी चाहिए।"
+}
+
+NO markdown, NO explanations. ONLY raw JSON.
+
+Title: ${story.originalHeadline}
+Description: ${story.originalSummary}`
+
+          const response = await fetch('https://devtoolbox-api.devtoolbox-api.workers.dev/ai/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt })
+          })
+
+          if (response.ok) {
+            const data = await response.json()
+            if (data && data.response) {
+              let parsed = null
+              if (typeof data.response === 'object') {
+                parsed = data.response
+              } else {
+                try { parsed = JSON.parse(data.response.trim()) } catch (e) {}
+              }
+              
+              // Validate: hindiSummary must be a proper sentence (80+ chars)
+              if (parsed && parsed.hindiHeadline && parsed.hindiSummary && parsed.hindiSummary.length >= 80) {
+                setHindiHeadline(parsed.hindiHeadline)
+                setHindiSummary(parsed.hindiSummary)
+                
+                const cacheData = { hindiHeadline: parsed.hindiHeadline, hindiSummary: parsed.hindiSummary }
+                localStorage.setItem(translationCacheKey, JSON.stringify(cacheData))
+              } else if (parsed && parsed.hindiHeadline && parsed.hindiSummary) {
+                // If translation is too short, try a stronger prompt
+                const retryPrompt = `Translate to FULL Hindi sentences. The previous translation was too short. Write at least 3 complete grammatical sentences in Devanagari script for the summary. Each sentence must have a subject and predicate.
+
+{
+  "hindiHeadline": "${parsed.hindiHeadline}",
+  "hindiSummary": "कम से कम तीन पूर्ण वाक्य लिखें। प्रत्येक वाक्य में विषय, क्रिया और वस्तु होनी चाहिए। हिंदी में लिखें, अंग्रेजी में नहीं।"
+}`
+                const retryResponse = await fetch('https://devtoolbox-api.devtoolbox-api.workers.dev/ai/generate', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ prompt: retryPrompt })
+                })
+                
+                if (retryResponse.ok) {
+                  const retryData = await retryResponse.json()
+                  if (retryData && retryData.response) {
+                    let retryParsed = null
+                    if (typeof retryData.response === 'object') {
+                      retryParsed = retryData.response
+                    } else {
+                      try { retryParsed = JSON.parse(retryData.response.trim()) } catch (e) {}
+                    }
+                    if (retryParsed && retryParsed.hindiSummary && retryParsed.hindiSummary.length >= 80) {
+                      setHindiHeadline(retryParsed.hindiHeadline || parsed.hindiHeadline)
+                      setHindiSummary(retryParsed.hindiSummary)
+                      const cacheData = { hindiHeadline: retryParsed.hindiHeadline, hindiSummary: retryParsed.hindiSummary }
+                      localStorage.setItem(translationCacheKey, JSON.stringify(cacheData))
+                    }
+                  }
+                }
+              }
+            }
+          }
+        } catch (e) {}
+      })()
+    }
+  }, []) // Runs once on mount - pre-fetches Hindi if not cached
+
   const getBulletPoints = () => {
-    const list = cardLang === 'hi' ? story.hindiExtendedSummary : story.extendedSummary
+    const list = cardLang === 'hi' ? (hindiExtendedSummary.length > 0 ? hindiExtendedSummary : story.hindiExtendedSummary) : story.extendedSummary
     if (list && list.length > 0) return list
 
     // Extract sentences from summary as default bullets
-    const text = cardLang === 'hi' ? (story.hindiSummary || story.summary) : story.summary
+    const text = cardLang === 'hi' ? (hindiSummary || story.hindiSummary || story.summary) : story.summary
     const parts = text.split(/[.।]/).map(s => s.trim()).filter(s => s.length > 10)
     return parts.slice(0, 3).map(s => cardLang === 'hi' ? `${s}।` : `${s}.`)
   }
@@ -1107,8 +1270,8 @@ Description: ${story.originalSummary}`
     } else {
       window.speechSynthesis.cancel() // Stop any running speech first
 
-      const headlineText = cardLang === 'hi' ? (story.hindiHeadline || story.headline) : story.headline
-      const bodyText = cardLang === 'hi' ? (story.hindiSummary || story.summary) : story.summary
+      const headlineText = cardLang === 'hi' ? (hindiHeadline || story.hindiHeadline || story.headline) : story.headline
+      const bodyText = cardLang === 'hi' ? (hindiSummary || story.hindiSummary || story.summary) : story.summary
       const textToRead = `${headlineText}. ${bodyText}`
       const utterance = new SpeechSynthesisUtterance(textToRead)
 
@@ -1167,8 +1330,8 @@ Description: ${story.originalSummary}`
     }
   }, [isNarrating])
 
-  const activeHeadline = cardLang === 'hi' ? (story.hindiHeadline || story.headline) : story.headline
-  const activeSummary = cardLang === 'hi' ? (story.hindiSummary || story.summary) : story.summary
+  const activeHeadline = cardLang === 'hi' ? (hindiHeadline || story.hindiHeadline || story.headline) : story.headline
+  const activeSummary = cardLang === 'hi' ? (hindiSummary || story.hindiSummary || story.summary) : story.summary
 
   return (
     <article className={`relative bg-gradient-to-br ${catInfo.color} h-full w-full flex flex-col justify-between p-4 sm:p-6 rounded-2xl border border-white/10 overflow-hidden shadow-2xl group`}>
@@ -1239,19 +1402,22 @@ Description: ${story.originalSummary}`
               </>
             )}
           </button>
-          
-          <VoteButtons storyId={storyId} />
-          
-          <button 
-            onClick={() => setCommentsOpen(true)}
-            className="flex items-center gap-1.5 text-xs font-medium text-white/60 hover:text-white transition-colors"
-          >
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
-            <span className="text-white/70">Comment</span>
-          </button>
-          
-          <ShareButton headline={activeHeadline} summary={activeSummary} storyId={story.id || contentHash(activeHeadline + activeSummary)} />
         </div>
+      </div>
+
+      {/* Right-side action bar (Instagram style) */}
+      <div className="absolute right-3 top-1/2 -translate-y-1/2 z-20 flex flex-col items-center gap-3">
+        <VoteButtons storyId={storyId} compact />
+        
+        <button 
+          onClick={() => setCommentsOpen(true)}
+          className="p-2 rounded-full hover:bg-white/10 text-white/60 hover:text-white transition-all active:scale-90"
+          title="Comment"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
+        </button>
+        
+        <ShareButton headline={activeHeadline} summary={activeSummary} storyId={story.id || contentHash(activeHeadline + activeSummary)} compact />
       </div>
 
       {/* Main Content Area (Headline + Summary) */}
@@ -1641,7 +1807,10 @@ const FALLBACK_STORIES = [
     link: "https://www.reuters.com",
     category: "world",
     time: "2h ago",
-    isAiEnhanced: true
+    isAiEnhanced: true,
+    regions: ['global', 'in', 'sg', 'us', 'gb', 'au', 'ae'],
+    originalHeadline: "Global Trade Routes Shift as Ports Report Record Cargo Volumes",
+    originalSummary: "Major maritime trade hubs in Singapore and Rotterdam have reported a 12% year-on-year increase in shipping volume. Industry analysts attribute the surge to shifting supply chain strategies as manufacturers seek closer-to-home logistics routes. The cargo congestion is expected to ease by the third quarter of this fiscal year."
   },
   {
     id: "fb-politics-1",
@@ -1663,7 +1832,10 @@ const FALLBACK_STORIES = [
     link: "https://www.politico.com",
     category: "politics",
     time: "3h ago",
-    isAiEnhanced: true
+    isAiEnhanced: true,
+    regions: ['us', 'global'],
+    originalHeadline: "Bipartisan Infrastructure Bill Approved by Congressional Committee",
+    originalSummary: "The Senate Committee on Environment and Public Works has advanced a landmark $90bn regional transit modernization bill. Both parties reached a compromise on funding streams, focusing on public-private partnerships rather than direct tax increases. The bill now heads to the full Senate floor for a final vote next week."
   },
   {
     id: "fb-business-1",
@@ -1673,7 +1845,10 @@ const FALLBACK_STORIES = [
     link: "https://www.bbc.com/news/business",
     category: "business",
     time: "1h ago",
-    isAiEnhanced: true
+    isAiEnhanced: true,
+    regions: ['us', 'gb', 'in', 'global'],
+    originalHeadline: "Central Bank Maintains Benchmarking Interest Rates Amid Inflation Slowdown",
+    originalSummary: "The Federal Reserve announced it will keep current interest rates steady, citing encouraging signs of cooling consumer prices. Chair Jerome Powell stated that while inflation remains above target, the labor market exhibits strong resilience. Economists predict the first rate cuts could begin as early as September."
   },
   {
     id: "fb-tech-1",
@@ -1683,7 +1858,10 @@ const FALLBACK_STORIES = [
     link: "https://www.theverge.com",
     category: "technology",
     time: "4h ago",
-    isAiEnhanced: true
+    isAiEnhanced: true,
+    regions: ['us', 'in', 'sg', 'gb', 'global'],
+    originalHeadline: "Tech Giants Announce Unified Security Protocol for AI Models",
+    originalSummary: "A coalition of leading technology firms has unveiled a new opensource framework for auditing security vulnerabilities in deep learning models. The standard, named SafeNet, aims to establish standardized benchmarks for data poisoning defense. Implementations will begin rolling out in cloud development platforms next month."
   },
   {
     id: "fb-startups-1",
@@ -1693,7 +1871,10 @@ const FALLBACK_STORIES = [
     link: "https://techcrunch.com",
     category: "startups",
     time: "5h ago",
-    isAiEnhanced: true
+    isAiEnhanced: true,
+    originalHeadline: "Robotics Startup Secures $45M Series B for Warehouse Automation",
+    originalSummary: "Boston-based Dexterity Labs has raised $45 million in a funding round led by Venture Capital Partners. The startup plans to use the capital to scale production of its autonomous cargo loading arms. Their AI-driven robots are already deployed in ten distribution centers across North America.",
+    regions: ['us', 'in', 'global']
   },
   {
     id: "fb-ent-1",
@@ -1703,7 +1884,10 @@ const FALLBACK_STORIES = [
     link: "https://variety.com",
     category: "entertainment",
     time: "6h ago",
-    isAiEnhanced: true
+    isAiEnhanced: true,
+    originalHeadline: "Indie Film Wins Top Honors at International Film Festival",
+    originalSummary: "The quiet drama 'Echoes of the Valley' has won the prestigious Palme Award at this year's festival. Critics praised the first-time director's nuanced storytelling and the lead actress's powerful performance. The film will receive a limited theatrical release in North America this autumn.",
+    regions: ['us', 'gb', 'global']
   },
   {
     id: "fb-sports-1",
@@ -1713,7 +1897,10 @@ const FALLBACK_STORIES = [
     link: "https://www.skysports.com",
     category: "sports",
     time: "1h ago",
-    isAiEnhanced: true
+    isAiEnhanced: true,
+    originalHeadline: "Underdog Team Clinches Victory in Thrilling Championship Final",
+    originalSummary: "In one of the greatest upsets in modern sports history, the Wildcats defeated the top-seeded Titans 4-3 in extra time. A spectacular header in the 118th minute secured the trophy. Thousands of fans took to the streets to celebrate their city's first major sports championship in over three decades.",
+    regions: ['gb', 'in', 'au', 'global']
   },
   {
     id: "fb-science-1",
@@ -1723,7 +1910,10 @@ const FALLBACK_STORIES = [
     link: "https://www.sciencedaily.com",
     category: "science",
     time: "8h ago",
-    isAiEnhanced: true
+    isAiEnhanced: true,
+    originalHeadline: "Astronomers Detect Giant Water Ice Deposits on Mars' Equator",
+    originalSummary: "Using data from orbiting radar probes, scientists have mapped massive sheets of subsurface water ice near the Martian equator. The deposits, buried under several meters of dust, could provide crucial resources for future human missions. The discovery suggests Mars had a more humid climate in its recent geological past.",
+    regions: ['us', 'global']
   },
   {
     id: "fb-health-1",
@@ -1733,7 +1923,10 @@ const FALLBACK_STORIES = [
     link: "https://www.bbc.com/news/health",
     category: "health",
     time: "10h ago",
-    isAiEnhanced: true
+    isAiEnhanced: true,
+    originalHeadline: "Study Links Mediterranean Diet to Enhanced Cognitive Longevity",
+    originalSummary: "A 20-year longitudinal study involving over 10,500 participants has found that high adherence to a plant-based diet reduces cognitive decline by 28%. Researchers noted that high levels of antioxidants and healthy monounsaturated fats support brain cell preservation. The findings highlight the critical role of lifestyle in aging.",
+    regions: ['gb', 'us', 'in', 'global']
   },
   {
     id: "fb-auto-1",
@@ -1743,7 +1936,10 @@ const FALLBACK_STORIES = [
     link: "https://www.motor1.com",
     category: "automobile",
     time: "12h ago",
-    isAiEnhanced: true
+    isAiEnhanced: true,
+    originalHeadline: "Electric Vehicle Range Reaches New Milestones with Solid-State Batteries",
+    originalSummary: "A major automotive conglomerate has successfully tested a prototype electric sedan that achieves a range of 800 kilometers on a single charge. The breakthrough is powered by next-generation solid-state battery cells. Commercial production is slated to begin in 2028, potentially revolutionizing the EV market.",
+    regions: ['us', 'de', 'gb', 'global']
   },
   {
     id: "fb-travel-1",
@@ -1753,7 +1949,10 @@ const FALLBACK_STORIES = [
     link: "https://www.lonelyplanet.com",
     category: "travel",
     time: "14h ago",
-    isAiEnhanced: true
+    isAiEnhanced: true,
+    originalHeadline: "Ecotourism Destinations Rise in Popularity for Summer Bookings",
+    originalSummary: "Travel agencies are reporting a 40% increase in bookings to sustainable travel hotspots and national parks. Travelers are increasingly seeking low-carbon impact accommodation and carbon-neutral hiking experiences. Costa Rica and Iceland remain the top choices for green tourism.",
+    regions: ['us', 'gb', 'au', 'global']
   },
   {
     id: "fb-fashion-1",
@@ -1763,7 +1962,10 @@ const FALLBACK_STORIES = [
     link: "https://www.vogue.com",
     category: "fashion",
     time: "16h ago",
-    isAiEnhanced: true
+    isAiEnhanced: true,
+    originalHeadline: "Fashion Houses Pledge 100% Recycled Textile Usage by 2030",
+    originalSummary: "At the global fashion summit, a coalition of luxury brands signed a charter committing to phase out virgin synthetics within the next six years. The brands will invest in automated fabric sorting and chemical recycling plants. The initiative marks a major shift toward circular fashion economics.",
+    regions: ['us', 'gb', 'fr', 'global']
   },
   {
     id: "fb-edu-1",
@@ -1773,7 +1975,10 @@ const FALLBACK_STORIES = [
     link: "https://www.chronicle.com",
     category: "education",
     time: "18h ago",
-    isAiEnhanced: true
+    isAiEnhanced: true,
+    originalHeadline: "Global Universities Partner to Launch Free Digital Learning Platform",
+    originalSummary: "A consortium of elite international universities has announced a unified online portal offering free certified courses in quantum computing and climate science. The platform aims to bridge educational accessibility gaps in developing regions. Enrollment starts next week with over 150 courses available.",
+    regions: ['us', 'gb', 'in', 'global']
   },
   {
     id: "fb-misc-1",
@@ -1783,7 +1988,10 @@ const FALLBACK_STORIES = [
     link: "https://www.huffpost.com/weird-news",
     category: "miscellaneous",
     time: "20h ago",
-    isAiEnhanced: true
+    isAiEnhanced: true,
+    originalHeadline: "Scientists Discover Deep Sea Coral Reef Resembling Intricate Castle",
+    originalSummary: "Marine researchers exploring a deep ocean trench off the Pacific coast have photographed a stunning, previously unknown deep-water coral structure. The white coral columns grow in spiraling formations that look remarkably like Gothic spires. The reef is home to several rare fish and invertebrate species.",
+    regions: ['us', 'global']
   }
 ]
 
@@ -1900,124 +2108,146 @@ function App() {
     return `${diffDays}d ago`
   }
 
-  // Fetch stories from RSS feeds
-  const fetchStories = useCallback(async () => {
-    setLoading(true)
-    
-    try {
-      let urlsToFetch = []
-      const activeWorldFeeds = COUNTRY_WORLD_FEEDS[userCountry] || COUNTRY_WORLD_FEEDS.global
-      
-      if (selectedCategory === 'all') {
-        // Fetch all category feeds with country-specific sources
-        Object.entries(NEWS_SOURCES).forEach(([cat, sources]) => {
-          if (userCountry !== 'global') {
-            const countrySources = getCountrySources(userCountry, cat)
-            if (countrySources && countrySources.length > 0) {
-              countrySources.forEach(source => urlsToFetch.push({ url: source.feed, name: `${source.name} (${COUNTRIES.find(c => c.id === userCountry)?.label || userCountry})`, category: cat }))
-            } else {
-              sources.forEach(source => urlsToFetch.push({ url: source.feed, name: source.name, category: cat }))
-            }
-          } else {
-            sources.forEach(source => urlsToFetch.push({ url: source.feed, name: source.name, category: cat }))
-          }
+  // Fetch RSS feed through CORS proxy with short timeout
+  const fetchRSSFeed = useCallback(async (feedUrl, sourceName, category) => {
+    for (const proxy of PROXY_URLS) {
+      try {
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 2000) // Short 2s timeout per proxy
+        
+        const response = await fetch(proxy + encodeURIComponent(feedUrl), {
+          signal: controller.signal
         })
-      } else if (selectedCategory === 'world') {
-        activeWorldFeeds.forEach(source => urlsToFetch.push({ url: source.feed, name: `${source.name} (${userCountry})`, category: 'world' }))
-      } else {
-        const countrySources = getCountrySources(userCountry, selectedCategory)
-        if (countrySources && countrySources.length > 0) {
-          countrySources.forEach(source => urlsToFetch.push({ url: source.feed, name: `${source.name} (${COUNTRIES.find(c => c.id === userCountry)?.label || userCountry})`, category: selectedCategory }))
-        } else {
-          const sources = NEWS_SOURCES[selectedCategory] || []
-          sources.forEach(source => urlsToFetch.push({ url: source.feed, name: source.name, category: selectedCategory }))
-        }
-      }
-
-
-
-      // Shuffle proxy order for variety on each refresh
-      const shuffledProxies = [...PROXY_URLS].sort(() => Math.random() - 0.5)
-      
-      // Shuffle feed order so different sources are tried first
-      const shuffledUrls = [...urlsToFetch].sort(() => Math.random() - 0.5)
-
-      // Fetch a single feed with fallback proxies and multiple cache-busting strategies
-      const fetchWithFallback = async (feedUrl, name, category) => {
-        const separator = feedUrl.includes('?') ? '&' : '?'
+        clearTimeout(timeoutId)
         
-        for (const proxyBase of shuffledProxies) {
-          try {
-            // Use unique cache buster per attempt
-            const cacheBuster = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
-            const proxyUrl = `${proxyBase}${encodeURIComponent(feedUrl + separator + '_cb=' + cacheBuster)}`
-            
-            const controller = new AbortController()
-            const timeoutId = setTimeout(() => controller.abort(), 4000) // 4s timeout per proxy request
-            
-            const response = await fetch(proxyUrl, { signal: controller.signal })
-            clearTimeout(timeoutId)
-            
-            if (response.ok) {
-              const text = await response.text()
-              const parsed = parseRSSFeed(text, name, category)
-              if (parsed && parsed.length > 0) {
-                return parsed // Return early if we successfully fetched and parsed articles!
-              }
-            }
-          } catch (e) {
-            console.warn(`Proxy ${proxyBase} failed for ${name}:`, e.message)
-          }
-        }
-        return []
-      }
-
-      // Fetch all feeds in parallel with shuffled order and multiple proxies
-      const fetchPromises = shuffledUrls.map(({ url, name, category }) => fetchWithFallback(url, name, category))
-      const results = await Promise.all(fetchPromises)
-      let allFetched = results.flat()
-
-      // Remove duplicates by headline
-      const seen = new Set()
-      allFetched = allFetched.filter(story => {
-        if (seen.has(story.headline)) return false
-        seen.add(story.headline)
-        return true
-      })
-
-      let finalStories = []
-      
-      if (allFetched.length > 0) {
-        // Shuffle the live fetched stories list to keep it feeling fresh and dynamic on refresh!
-        finalStories = [...allFetched].sort(() => Math.random() - 0.5)
-      } else {
-        // Fallback to local database if proxy fetches failed
-        console.warn('Feeds failed to resolve. Loading fallback stories.')
-        let fallbacks = FALLBACK_STORIES
-        if (selectedCategory !== 'all') {
-          fallbacks = FALLBACK_STORIES.filter(s => s.category === selectedCategory)
-        } else if (userInterests && userInterests.length > 0) {
-          // Only filter by interests when category is 'all' and user has saved interests
-          const interestSet = new Set(userInterests)
-          fallbacks = FALLBACK_STORIES.filter(s => interestSet.has(s.category))
-        }
+        if (!response.ok) continue
         
-        if (fallbacks.length === 0) {
-          // If filtering removed all stories, show all fallbacks as last resort
-          fallbacks = FALLBACK_STORIES
-        }
-        
-        // Shuffle the fallback list slightly to keep it feeling fresh on refresh!
-        finalStories = [...fallbacks].sort(() => Math.random() - 0.5)
+        const xmlText = await response.text()
+        return parseRSSFeed(xmlText, sourceName, category)
+      } catch (e) {
+        console.warn(`Proxy ${proxy} failed for ${feedUrl}:`, e.message)
+        continue
       }
-
-      setStories(finalStories)
-    } catch (err) {
-      console.warn('Failed to fetch stories:', err)
-    } finally {
-      setLoading(false)
     }
-  }, [selectedCategory, userCountry, userInterests, parseRSSFeed])
+    return [] // All proxies failed
+  }, [parseRSSFeed])
+
+  // Fetch stories from RSS feeds with multiple proxy fallbacks
+  const fetchStories = useCallback(async () => {
+    console.log('fetchStories called with category:', selectedCategory, 'country:', userCountry)
+    
+    setLoading(true)
+    let allStories = []
+    
+    // Get sources to fetch based on country and category
+    let sourcesToFetch = []
+    
+    if (userCountry && userCountry !== 'global') {
+      // Try country-specific feeds first
+      const countrySources = getCountrySources(userCountry, selectedCategory)
+      if (countrySources) {
+        sourcesToFetch = countrySources.map(s => ({ ...s, category: selectedCategory === 'all' ? s.category : selectedCategory }))
+      } else {
+        // Fall back to global feeds for this country
+        const globalFeeds = COUNTRY_WORLD_FEEDS[userCountry] || []
+        sourcesToFetch = globalFeeds.map(f => ({ name: f.name, feed: f.feed, category: 'world' }))
+      }
+    } else {
+      // Global - fetch from multiple categories
+      if (selectedCategory === 'all') {
+        const allCategories = CATEGORIES.filter(c => c.id !== 'all').slice(0, 5) // Limit to 5 categories for speed
+        allCategories.forEach(cat => {
+          const sources = NEWS_SOURCES[cat.id] || []
+          sources.slice(0, 2).forEach(s => {
+            sourcesToFetch.push({ name: s.name, feed: s.feed, category: cat.id })
+          })
+        })
+      } else {
+        const sources = NEWS_SOURCES[selectedCategory] || []
+        sources.forEach(s => {
+          sourcesToFetch.push({ name: s.name, feed: s.feed, category: selectedCategory })
+        })
+      }
+    }
+    
+    // Fetch from multiple sources in parallel with short timeouts
+    console.log('Fetching from', sourcesToFetch.length, 'sources')
+    const fetchPromises = sourcesToFetch.map(s => fetchRSSFeed(s.feed, s.name, s.category))
+    const results = await Promise.all(fetchPromises)
+    
+    // Combine all fetched stories
+    allStories = results.flat()
+    
+    console.log('Fetched', allStories.length, 'stories from RSS')
+    
+    // If RSS failed completely, fall back to static stories with shuffle
+    if (allStories.length === 0) {
+      console.warn('RSS fetch failed, using fallback stories')
+      let fallback = FALLBACK_STORIES.slice()
+      
+      // Filter by country relevance
+      if (userCountry && userCountry !== 'global') {
+        const regionalStories = FALLBACK_STORIES.filter(s => s.regions?.includes(userCountry))
+        const globalStories = FALLBACK_STORIES.filter(s => !s.regions || s.regions.includes('global'))
+        
+        if (regionalStories.length > 0) {
+          const regionalCount = Math.max(1, Math.floor(regionalStories.length * 0.7))
+          const globalCount = Math.min(globalStories.length, Math.ceil(regionalStories.length * 0.3))
+          
+          const shuffledRegional = [...regionalStories].sort(() => Math.random() - 0.5).slice(0, regionalCount)
+          const shuffledGlobal = [...globalStories].sort(() => Math.random() - 0.5).slice(0, globalCount)
+          fallback = [...shuffledRegional, ...shuffledGlobal]
+        }
+      }
+      
+      // Filter by category
+      if (selectedCategory !== 'all') {
+        const categoryStories = fallback.filter(s => s.category === selectedCategory)
+        if (categoryStories.length > 0) {
+          fallback = categoryStories
+        } else {
+          fallback = FALLBACK_STORIES.filter(s => s.category === selectedCategory)
+        }
+      }
+      
+      // Filter by interests
+      if (userInterests && userInterests.length > 0 && selectedCategory === 'all') {
+        const interestSet = new Set(userInterests)
+        const interestStories = fallback.filter(s => interestSet.has(s.category))
+        if (interestStories.length > 0) {
+          fallback = interestStories
+        }
+      }
+      
+      // Last resort - all stories
+      if (fallback.length === 0) {
+        fallback = FALLBACK_STORIES.slice()
+      }
+      
+      // Shuffle for variety on each refresh
+      const shuffled = [...fallback].sort(() => Math.random() - 0.5)
+      console.log('Using', shuffled.length, 'fallback stories')
+      setStories(shuffled)
+    } else {
+      // Filter fetched stories by category if needed
+      if (selectedCategory !== 'all') {
+        allStories = allStories.filter(s => s.category === selectedCategory)
+      }
+      
+      // Filter by user interests
+      if (userInterests && userInterests.length > 0 && selectedCategory === 'all') {
+        const interestSet = new Set(userInterests)
+        allStories = allStories.filter(s => interestSet.has(s.category))
+      }
+      
+      // Limit to reasonable number and shuffle
+      const limited = allStories.slice(0, 20).sort(() => Math.random() - 0.5)
+      console.log('Using', limited.length, 'fetched stories')
+      setStories(limited)
+    }
+    
+    setLoading(false)
+  }, [selectedCategory, userCountry, userInterests, fetchRSSFeed])
 
   // Load stories on mount or category change
   useEffect(() => {
