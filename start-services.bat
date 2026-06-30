@@ -1,0 +1,9 @@
+@echo off
+echo Starting NewsPulse Services...
+taskkill /f /im node.exe >nul 2>&1
+timeout /t 2 /nobreak >nul
+echo Server starting...
+echo App starting...
+echo.
+echo Services ready!
+pause

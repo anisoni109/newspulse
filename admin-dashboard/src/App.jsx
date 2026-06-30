@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 
-const API_URL = '/api'
+// Connect to backend server running on localhost:3000
+const API_URL = 'http://localhost:3000/api'
 
 // ─── Categories ──────────────────────────────────────────────────────
 const CATEGORIES = [

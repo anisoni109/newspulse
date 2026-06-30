@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react'
+gin windowimport React, { useState, useEffect, useRef, useCallback } from 'react'
 
 // ─── Categories ──────────────────────────────────────────────────────
 const CATEGORIES = [
@@ -606,19 +606,29 @@ const COUNTRY_CATEGORY_FEEDS = {
   }
 }
 
+const getApiUrl = () => {
+  return localStorage.getItem('NEWS_API_URL') || 'http://localhost:3000/api'
+}
+
 // ─── Share Component — shares from your website, not the original article ──
-function ShareButton({ headline, summary, storyId: propStoryId, compact = false }) {
+function ShareButton({ headline, summary, storyId, compact = false }) {
   const [copied, setCopied] = useState(false)
 
-  // Generate a unique shareable URL for this story on your website
   const getShareUrl = () => {
-    const storyId = encodeURIComponent(propStoryId || contentHash(headline + summary))
-    return `${window.location.origin}/#/story/${storyId}`
+    const sId = encodeURIComponent(storyId || contentHash(headline + summary))
+    return `${window.location.origin}/#/story/${sId}`
   }
 
   const handleShare = async () => {
     const shareUrl = getShareUrl()
     const text = `${headline}\n\n${summary}\n\nRead more on NewsPulse: ${shareUrl}`
+    
+    try {
+      await fetch(`${getApiUrl()}/stories/${storyId}/share`, { method: 'POST' })
+    } catch (e) {
+      console.warn("Failed to report share to backend:", e)
+    }
+
     if (navigator.share) {
       try { await navigator.share({ title: headline, text, url: shareUrl }) } catch {}
     } else {
@@ -660,48 +670,78 @@ function ShareButton({ headline, summary, storyId: propStoryId, compact = false 
 }
 
 // ─── Vote Buttons Component (with compact mode for right-side bar) ────────────────
-function VoteButtons({ storyId, compact = false }) {
-  const [upvotes, setUpvotes] = useState(() => {
-    const votes = JSON.parse(localStorage.getItem('NEWS_VOTES') || '{}')
-    return votes[storyId]?.up || Math.floor(Math.random() * 50) + 10
-  })
-  const [downvotes, setDownvotes] = useState(() => {
-    const votes = JSON.parse(localStorage.getItem('NEWS_VOTES') || '{}')
-    return votes[storyId]?.down || Math.floor(Math.random() * 20) + 3
-  })
+function VoteButtons({ storyId, initialUpvotes = 0, initialDownvotes = 0, compact = false }) {
+  const [upvotes, setUpvotes] = useState(initialUpvotes)
+  const [downvotes, setDownvotes] = useState(initialDownvotes)
   const [userVote, setUserVote] = useState(() => {
     const votes = JSON.parse(localStorage.getItem('NEWS_VOTES') || '{}')
     return votes[storyId]?.vote || null // 'up', 'down', or null
   })
 
+  // Sync state if initial props change
+  useEffect(() => {
+    setUpvotes(initialUpvotes)
+    setDownvotes(initialDownvotes)
+  }, [initialUpvotes, initialDownvotes])
+
+  const submitVote = async (voteType) => {
+    const userId = localStorage.getItem('NEWS_USER_ID') || 'user_' + Math.random().toString(36).substr(2, 9)
+    if (!localStorage.getItem('NEWS_USER_ID')) {
+      localStorage.setItem('NEWS_USER_ID', userId)
+    }
+
+    try {
+      const res = await fetch(`${getApiUrl()}/stories/${storyId}/vote`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ voteType, userId })
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setUpvotes(data.upvotes)
+        setDownvotes(data.downvotes)
+      }
+    } catch (e) {
+      console.warn("Failed to submit vote to backend:", e)
+    }
+  }
+
   const handleUpvote = () => {
     const newVote = userVote === 'up' ? null : 'up'
-    const newDown = newVote === 'up' ? 'down' : downvotes > 0 && userVote === 'down' ? null : downvotes
     
-    if (newVote === 'up') setUpvotes(v => v + 1)
-    else if (userVote === 'up') setUpvotes(v => Math.max(0, v - 1))
-    
-    if (newDown === null && userVote === 'down' && downvotes > 0) setDownvotes(d => Math.max(0, d - 1))
-    else if (newVote === 'up' && userVote === 'down') setDownvotes(0)
+    // Optimistic UI updates
+    if (newVote === 'up') {
+      setUpvotes(v => v + 1)
+      if (userVote === 'down') setDownvotes(d => Math.max(0, d - 1))
+    } else {
+      setUpvotes(v => Math.max(0, v - 1))
+    }
     
     setUserVote(newVote)
-    
     const votes = JSON.parse(localStorage.getItem('NEWS_VOTES') || '{}')
-    votes[storyId] = { up: newVote === 'up' ? upvotes + (userVote !== 'up' ? 1 : 0) : Math.max(0, upvotes - (userVote === 'up' ? 1 : 0)), down: newDown || downvotes, vote: newVote }
+    votes[storyId] = { vote: newVote }
     localStorage.setItem('NEWS_VOTES', JSON.stringify(votes))
+
+    submitVote(newVote === 'up' ? 1 : 0)
   }
 
   const handleDownvote = () => {
     const newVote = userVote === 'down' ? null : 'down'
     
-    if (newVote === 'down') setDownvotes(d => d + 1)
-    else if (userVote === 'down') setDownvotes(d => Math.max(0, d - 1))
+    // Optimistic UI updates
+    if (newVote === 'down') {
+      setDownvotes(d => d + 1)
+      if (userVote === 'up') setUpvotes(v => Math.max(0, v - 1))
+    } else {
+      setDownvotes(d => Math.max(0, d - 1))
+    }
     
     setUserVote(newVote)
-    
     const votes = JSON.parse(localStorage.getItem('NEWS_VOTES') || '{}')
-    votes[storyId] = { up: newVote === 'up' ? upvotes + (userVote !== 'up' ? 1 : 0) : Math.max(0, upvotes - (userVote === 'up' ? 1 : 0)), down: newVote === 'down' ? downvotes + (userVote !== 'down' ? 1 : 0) : Math.max(0, downvotes - (userVote === 'down' ? 1 : 0)), vote: newVote }
+    votes[storyId] = { vote: newVote }
     localStorage.setItem('NEWS_VOTES', JSON.stringify(votes))
+
+    submitVote(newVote === 'down' ? -1 : 0)
   }
 
   if (compact) {
@@ -733,31 +773,76 @@ function VoteButtons({ storyId, compact = false }) {
 
 // ─── Comments Modal Component ──────────────────────────────────────
 function CommentsModal({ isOpen, onClose, storyId }) {
-  const [comments, setComments] = useState(() => {
-    const allComments = JSON.parse(localStorage.getItem('NEWS_COMMENTS') || '{}')
-    return allComments[storyId] || []
-  })
+  const [comments, setComments] = useState([])
+  const [loading, setLoading] = useState(true)
   const [newComment, setNewComment] = useState('')
+
+  useEffect(() => {
+    if (!isOpen) return
+    let active = true
+
+    const loadComments = async () => {
+      try {
+        setLoading(true)
+        const res = await fetch(`${getApiUrl()}/stories/${storyId}/comments`)
+        if (res.ok) {
+          const data = await res.json()
+          if (active) setComments(data)
+        }
+      } catch (e) {
+        console.warn("Failed to load comments from backend:", e)
+        // Fallback to local storage
+        const allComments = JSON.parse(localStorage.getItem('NEWS_COMMENTS') || '{}')
+        if (active) setComments(allComments[storyId] || [])
+      } finally {
+        if (active) setLoading(false)
+      }
+    }
+
+    loadComments()
+    return () => { active = false }
+  }, [isOpen, storyId])
 
   if (!isOpen) return null
 
-  const handleAddComment = () => {
+  const handleAddComment = async () => {
     if (!newComment.trim()) return
     
-    const comment = {
-      id: Date.now(),
+    const tempId = Date.now()
+    const userId = localStorage.getItem('NEWS_USER_ID') || 'user_' + Math.random().toString(36).substr(2, 5)
+    if (!localStorage.getItem('NEWS_USER_ID')) {
+      localStorage.setItem('NEWS_USER_ID', userId)
+    }
+
+    const localComment = {
+      id: tempId,
       text: newComment.trim(),
-      author: 'You',
-      time: 'Just now'
+      userId,
+      createdAt: new Date().toISOString()
     }
     
-    const updatedComments = [...comments, comment]
-    setComments(updatedComments)
-    
-    const allComments = JSON.parse(localStorage.getItem('NEWS_COMMENTS') || '{}')
-    allComments[storyId] = updatedComments
-    localStorage.setItem('NEWS_COMMENTS', JSON.stringify(allComments))
+    // Optimistic UI update
+    setComments(prev => [localComment, ...prev])
     setNewComment('')
+
+    try {
+      const res = await fetch(`${getApiUrl()}/stories/${storyId}/comment`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: localComment.text, userId: localComment.userId })
+      })
+      if (res.ok) {
+        const savedComment = await res.json()
+        setComments(prev => prev.map(c => c.id === tempId ? savedComment : c))
+      }
+    } catch (e) {
+      console.warn("Failed to save comment to backend, saving locally:", e)
+      // Save locally as backup
+      const allComments = JSON.parse(localStorage.getItem('NEWS_COMMENTS') || '{}')
+      const updated = [localComment, ...(allComments[storyId] || [])]
+      allComments[storyId] = updated
+      localStorage.setItem('NEWS_COMMENTS', JSON.stringify(allComments))
+    }
   }
 
   return (
@@ -777,16 +862,22 @@ function CommentsModal({ isOpen, onClose, storyId }) {
 
         {/* Comments List */}
         <div className="p-4 max-h-[50vh] overflow-y-auto no-scrollbar space-y-3">
-          {comments.length === 0 ? (
+          {loading ? (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white/20 mx-auto"></div>
+            </div>
+          ) : comments.length === 0 ? (
             <p className="text-xs text-gray-500 text-center py-8">No comments yet. Be the first to share your thoughts!</p>
           ) : (
             comments.map(comment => (
               <div key={comment.id} className="bg-white/5 rounded-xl p-3 border border-white/5">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-bold text-white">{comment.author}</span>
-                  <span className="text-[10px] text-gray-500">{comment.time}</span>
+                  <span className="text-xs font-bold text-white">{comment.userId.substring(0, 10)}</span>
+                  <span className="text-[10px] text-gray-500">
+                    {new Date(comment.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                  </span>
                 </div>
-                <p className="text-xs text-white/80 leading-relaxed">{comment.text}</p>
+                <p className="text-xs text-white/85 leading-relaxed">{comment.text}</p>
               </div>
             ))
           )}
@@ -818,7 +909,9 @@ function CommentsModal({ isOpen, onClose, storyId }) {
 }
 
 // ─── Settings Modal Component ──────────────────────────────────────
-function SettingsModal({ isOpen, onClose, userCountry, setUserCountry, appTheme, setAppTheme, newsLanguage, setNewsLanguage, enableTranslation, setEnableTranslation }) {
+function SettingsModal({ isOpen, onClose, userCountry, setUserCountry, appTheme, setAppTheme, newsLanguage, setNewsLanguage, enableTranslation, setEnableTranslation, autoPublishStories, setAutoPublishStories }) {
+  const [apiUrl, setApiUrl] = useState(() => localStorage.getItem('NEWS_API_URL') || 'http://localhost:3000/api')
+
   if (!isOpen) return null
 
   const LANGUAGES = [
@@ -954,6 +1047,25 @@ function SettingsModal({ isOpen, onClose, userCountry, setUserCountry, appTheme,
             </div>
           </div>
 
+          {/* Auto-Publish Toggle */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5">
+              <div>
+                <p className="text-xs font-semibold text-white">⚡ Auto-Publish Stories</p>
+                <p className="text-[10px] text-gray-500 mt-0.5">Show pending stories from admin dashboard in your feed (instant publish)</p>
+              </div>
+              <button
+                onClick={() => {
+                  setAutoPublishStories(!autoPublishStories)
+                  localStorage.setItem('NEWS_AUTO_PUBLISH', String(!autoPublishStories))
+                }}
+                className={`relative w-12 h-6 rounded-full transition-colors ${autoPublishStories ? 'bg-green-500' : 'bg-gray-600'}`}
+              >
+                <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${autoPublishStories ? 'translate-x-6' : ''}`} />
+              </button>
+            </div>
+          </div>
+
           {/* Translation Toggle */}
           <div className="space-y-3">
             <div className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5">
@@ -970,6 +1082,28 @@ function SettingsModal({ isOpen, onClose, userCountry, setUserCountry, appTheme,
               >
                 <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${enableTranslation ? 'translate-x-6' : ''}`} />
               </button>
+            </div>
+          </div>
+
+          {/* Developer API URL Section */}
+          <div className="space-y-3 border-t border-white/10 pt-4">
+            <div>
+              <h3 className="text-xs font-bold text-gray-300 uppercase tracking-widest flex items-center gap-2">
+                🛠️ Backend API Configuration
+              </h3>
+              <p className="text-[10px] text-gray-500 mt-0.5">Use local API server or an exposed HTTPS tunnel for remote environments (e.g. GitHub Pages)</p>
+            </div>
+            <div className="form-field">
+              <input
+                type="text"
+                value={apiUrl}
+                onChange={(e) => {
+                  setApiUrl(e.target.value)
+                  localStorage.setItem('NEWS_API_URL', e.target.value)
+                }}
+                placeholder="http://localhost:3000/api"
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+              />
             </div>
           </div>
 
@@ -1345,6 +1479,9 @@ Description: ${story.originalSummary}`
       <div className="relative z-10 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <span className="text-2xl drop-shadow-lg">{catInfo.icon}</span>
+          <span className="text-[9px] font-bold text-white/60 bg-black/40 border border-white/10 px-2 py-0.5 rounded-full tracking-wider">
+            #NP-${story.serialNo || 'Seed'}
+          </span>
         </div>
         
         <div className="flex items-center gap-2.5">
@@ -1407,7 +1544,7 @@ Description: ${story.originalSummary}`
 
       {/* Right-side action bar (Instagram style) */}
       <div className="absolute right-3 top-1/2 -translate-y-1/2 z-20 flex flex-col items-center gap-3">
-        <VoteButtons storyId={storyId} compact />
+        <VoteButtons storyId={storyId} initialUpvotes={story.upvotes || 0} initialDownvotes={story.downvotes || 0} compact />
         
         <button 
           onClick={() => setCommentsOpen(true)}
@@ -1625,16 +1762,8 @@ const THEMES = [
 function ExplorePage({ 
   userInterests,
   setUserInterests,
-  userCountry,
-  setUserCountry,
-  appTheme,
-  setAppTheme,
-  enableTranslation,
-  setEnableTranslation
+  appTheme
 }) {
-  const [saveStatus, setSaveStatus] = useState('') // '' | 'saving' | 'saved'
-
-  // Play subtle visual audio feedback click chime
   const playClickChime = () => {
     try {
       const ctx = new (window.AudioContext || window.webkitAudioContext)()
@@ -1668,64 +1797,8 @@ function ExplorePage({
     localStorage.setItem('NEWS_USER_INTERESTS', JSON.stringify(updated))
   }
 
-  const activeTheme = THEMES.find(t => t.id === appTheme) || THEMES[0]
-
   return (
     <div className="max-w-2xl mx-auto px-4 py-6 space-y-6 overflow-y-auto pb-24">
-      {/* Quick Country Presets */}
-      <div className="bg-white/5 border border-white/10 rounded-2xl p-5 shadow-xl">
-        <h2 className="text-base font-extrabold text-white mb-1.5 flex items-center gap-2">
-          <span>📍</span> Your Country
-        </h2>
-        <p className="text-[11px] text-gray-400 mb-3.5">Currently selected country for localized news feeds.</p>
-        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
-          {COUNTRIES.map(c => {
-            const isActive = userCountry === c.id
-            return (
-              <button
-                key={`preset-${c.id}`}
-                onClick={() => {
-                  playClickChime()
-                  setUserCountry(c.id)
-                  localStorage.setItem('NEWS_USER_COUNTRY', c.id)
-                }}
-                className={`flex items-center gap-1.5 px-3.5 py-2 rounded-full border text-xs font-bold transition-all whitespace-nowrap active:scale-95 ${
-                  isActive
-                    ? `border-transparent bg-gradient-to-r ${activeTheme.color} text-white shadow-md`
-                    : 'border-white/5 bg-gray-900/40 hover:bg-gray-800/40 text-gray-400 hover:text-gray-300'
-                }`}
-              >
-                <span>{c.icon}</span>
-                <span>{c.label}</span>
-              </button>
-            )
-          })}
-        </div>
-      </div>
-
-      {/* Saved Preferences Summary */}
-      <div className="bg-white/5 border border-white/10 rounded-2xl p-5 shadow-xl">
-        <h2 className="text-base font-extrabold text-white mb-3 flex items-center gap-2">
-          <span>💾</span> Saved Preferences
-        </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {/* Country */}
-          <div className="space-y-1.5">
-            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Country</p>
-            <p className="text-xs font-semibold text-white flex items-center gap-2">
-              {COUNTRIES.find(c => c.id === userCountry)?.icon} {COUNTRIES.find(c => c.id === userCountry)?.label}
-            </p>
-          </div>
-          {/* Theme */}
-          <div className="space-y-1.5">
-            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Theme</p>
-            <p className="text-xs font-semibold text-white flex items-center gap-2">
-              {THEMES.find(t => t.id === appTheme)?.icon} {THEMES.find(t => t.id === appTheme)?.label}
-            </p>
-          </div>
-        </div>
-      </div>
-
       {/* Dynamic Filter Section */}
       <div className="bg-white/5 border border-white/10 rounded-2xl p-5 shadow-xl">
         <h2 className="text-base font-extrabold text-white mb-1 flex items-center gap-2">
@@ -1763,7 +1836,7 @@ function ExplorePage({
 
       {/* Save CTA */}
       <div className="pt-2">
-        <p className="text-[10px] text-gray-500 text-center">All preferences are saved automatically to your browser.</p>
+        <p className="text-[10px] text-gray-500 text-center">Your interest choices are saved automatically to your browser.</p>
       </div>
     </div>
   )
@@ -1995,8 +2068,96 @@ const FALLBACK_STORIES = [
   }
 ]
 
+// ─── Login Screen ──────────────────────────────────────────────────
+function LoginScreen({ onLogin }) {
+  const [mode, setMode] = useState('login')
+  const [name, setName] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    setLoading(true)
+    setError('')
+    try {
+      let data
+      if (mode === 'guest') {
+        const res = await fetch('/api/auth/guest', { method: 'POST', headers: { 'Content-Type': 'application/json' } })
+        data = await res.json()
+        if (!res.ok) throw new Error(data.error)
+      } else if (mode === 'login') {
+        const res = await fetch('/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, password }) })
+        data = await res.json()
+        if (!res.ok) throw new Error(data.error)
+      } else {
+        const res = await fetch('/api/auth/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, password }) })
+        data = await res.json()
+        if (!res.ok) throw new Error(data.error)
+      }
+      onLogin(data)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-950 flex items-center justify-center p-4">
+      <div className="w-full max-w-md bg-gray-900 border border-white/10 rounded-2xl shadow-2xl p-6">
+        <div className="text-center mb-6">
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-500 to-indigo-500 bg-clip-text text-transparent">📰 NewsPulse</h1>
+          <p className="text-xs text-gray-500 mt-1">Your News, Your Way</p>
+        </div>
+
+        <div className="flex gap-2 mb-6">
+          {['login', 'guest'].map(m => (
+            <button key={m} onClick={() => { setMode(m); setError(''); }} className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${mode === m ? 'bg-blue-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}>
+              {m === 'guest' ? '👤 Guest' : '🔑 Login'}
+            </button>
+          ))}
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {mode !== 'guest' && (
+            <div>
+              <label className="text-xs font-bold text-gray-300 block mb-1">Username</label>
+              <input type="text" value={name} onChange={e => setName(e.target.value)} required placeholder="Enter username" className="w-full bg-gray-800/50 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500" />
+            </div>
+          )}
+          {mode !== 'guest' && (
+            <div>
+              <label className="text-xs font-bold text-gray-300 block mb-1">Password</label>
+              <input type="password" value={password} onChange={e => setPassword(e.target.value)} required placeholder="Enter password" className="w-full bg-gray-800/50 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500" />
+            </div>
+          )}
+          {mode === 'guest' && (
+            <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-3">
+              <p className="text-xs text-blue-300">Continue as guest with a random username. You can read, vote, and comment on stories.</p>
+            </div>
+          )}
+          {error && <p className="text-xs text-red-400 bg-red-500/10 p-2 rounded-lg">{error}</p>}
+          <button type="submit" disabled={loading} className="w-full px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:opacity-90 text-white font-bold disabled:opacity-50">
+            {loading ? 'Please wait...' : mode === 'guest' ? 'Continue as Guest' : mode === 'login' ? 'Login' : 'Create Account'}
+          </button>
+        </form>
+      </div>
+    </div>
+  )
+}
+
 // ─── Main App ────────────────────────────────────────────────────────
 function App() {
+  const [user, setUser] = useState(() => {
+    const saved = localStorage.getItem('NEWSPULSE_USER')
+    return saved ? JSON.parse(saved) : null
+  })
+
+  if (!user) {
+    return <LoginScreen onLogin={data => { setUser(data); localStorage.setItem('NEWSPULSE_USER', JSON.stringify(data)) }} />
+  }
+
   const [activeTab, setActiveTab] = useState('feed') // 'feed' | 'explore'
   const [stories, setStories] = useState([])
   const [loading, setLoading] = useState(false)
@@ -2028,9 +2189,6 @@ function App() {
   
   // Settings state
   const [settingsOpen, setSettingsOpen] = useState(false)
-  const [newsLanguage, setNewsLanguage] = useState(() => {
-    return localStorage.getItem('NEWS_LANGUAGE') || 'en'
-  })
   const [commentsStoryId, setCommentsStoryId] = useState(null)
 
   // Parse RSS or Atom XML to stories
@@ -2108,99 +2266,71 @@ function App() {
     return `${diffDays}d ago`
   }
 
-  // Fetch RSS feed through CORS proxy with short timeout
-  const fetchRSSFeed = useCallback(async (feedUrl, sourceName, category) => {
-    for (const proxy of PROXY_URLS) {
-      try {
-        const controller = new AbortController()
-        const timeoutId = setTimeout(() => controller.abort(), 2000) // Short 2s timeout per proxy
-        
-        const response = await fetch(proxy + encodeURIComponent(feedUrl), {
-          signal: controller.signal
-        })
-        clearTimeout(timeoutId)
-        
-        if (!response.ok) continue
-        
-        const xmlText = await response.text()
-        return parseRSSFeed(xmlText, sourceName, category)
-      } catch (e) {
-        console.warn(`Proxy ${proxy} failed for ${feedUrl}:`, e.message)
-        continue
-      }
-    }
-    return [] // All proxies failed
-  }, [parseRSSFeed])
-
-  // Fetch stories from RSS feeds with multiple proxy fallbacks
+  // Fetch stories from backend API (like InShorts - fresh content every refresh)
   const fetchStories = useCallback(async () => {
     console.log('fetchStories called with category:', selectedCategory, 'country:', userCountry)
     
     setLoading(true)
-    let allStories = []
     
-    // Get sources to fetch based on country and category
-    let sourcesToFetch = []
-    
-    if (userCountry && userCountry !== 'global') {
-      // Try country-specific feeds first
-      const countrySources = getCountrySources(userCountry, selectedCategory)
-      if (countrySources) {
-        sourcesToFetch = countrySources.map(s => ({ ...s, category: selectedCategory === 'all' ? s.category : selectedCategory }))
-      } else {
-        // Fall back to global feeds for this country
-        const globalFeeds = COUNTRY_WORLD_FEEDS[userCountry] || []
-        sourcesToFetch = globalFeeds.map(f => ({ name: f.name, feed: f.feed, category: 'world' }))
-      }
-    } else {
-      // Global - fetch from multiple categories
-      if (selectedCategory === 'all') {
-        const allCategories = CATEGORIES.filter(c => c.id !== 'all').slice(0, 5) // Limit to 5 categories for speed
-        allCategories.forEach(cat => {
-          const sources = NEWS_SOURCES[cat.id] || []
-          sources.slice(0, 2).forEach(s => {
-            sourcesToFetch.push({ name: s.name, feed: s.feed, category: cat.id })
-          })
-        })
-      } else {
-        const sources = NEWS_SOURCES[selectedCategory] || []
-        sources.forEach(s => {
-          sourcesToFetch.push({ name: s.name, feed: s.feed, category: selectedCategory })
-        })
-      }
-    }
-    
-    // Fetch from multiple sources in parallel with short timeouts
-    console.log('Fetching from', sourcesToFetch.length, 'sources')
-    const fetchPromises = sourcesToFetch.map(s => fetchRSSFeed(s.feed, s.name, s.category))
-    const results = await Promise.all(fetchPromises)
-    
-    // Combine all fetched stories
-    allStories = results.flat()
-    
-    console.log('Fetched', allStories.length, 'stories from RSS')
-    
-    // If RSS failed completely, fall back to static stories with shuffle
-    if (allStories.length === 0) {
-      console.warn('RSS fetch failed, using fallback stories')
-      let fallback = FALLBACK_STORIES.slice()
+    try {
+      const params = new URLSearchParams({
+        status: 'approved',
+        limit: 20,
+        page: page + 1,
+        country: userCountry
+      })
       
-      // Filter by country relevance
-      if (userCountry && userCountry !== 'global') {
-        const regionalStories = FALLBACK_STORIES.filter(s => s.regions?.includes(userCountry))
-        const globalStories = FALLBACK_STORIES.filter(s => !s.regions || s.regions.includes('global'))
+      if (selectedCategory !== 'all') {
+        params.set('category', selectedCategory)
+      }
+      
+      const response = await fetch(`${getApiUrl()}/stories?${params}`)
+      
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`)
+      }
+      
+      const fetchedStories = await response.json()
+      console.log('Fetched', fetchedStories.length, 'stories from backend')
+      
+      // Filter by user interests if any
+      let storiesToDisplay = fetchedStories
+      
+      if (userInterests && userInterests.length > 0 && selectedCategory === 'all') {
+        const interestSet = new Set(userInterests)
+        storiesToDisplay = storiesToDisplay.filter(s => interestSet.has(s.category))
+      }
+      
+      // Filter by country relevance - prefer regional stories
+      if (userCountry && userCountry !== 'global' && storiesToDisplay.length > 0) {
+        const regionalStories = storiesToDisplay.filter(s => s.regions?.includes(userCountry))
+        const globalStories = storiesToDisplay.filter(s => !s.regions || s.regions.includes('global'))
         
         if (regionalStories.length > 0) {
+          // Mix: 70% regional + 30% global
           const regionalCount = Math.max(1, Math.floor(regionalStories.length * 0.7))
           const globalCount = Math.min(globalStories.length, Math.ceil(regionalStories.length * 0.3))
           
           const shuffledRegional = [...regionalStories].sort(() => Math.random() - 0.5).slice(0, regionalCount)
           const shuffledGlobal = [...globalStories].sort(() => Math.random() - 0.5).slice(0, globalCount)
-          fallback = [...shuffledRegional, ...shuffledGlobal]
+          storiesToDisplay = [...shuffledRegional, ...shuffledGlobal]
         }
       }
       
-      // Filter by category
+      // If no stories match filters, show all approved stories
+      if (storiesToDisplay.length === 0) {
+        console.warn('No stories match filters, showing all approved')
+        storiesToDisplay = fetchedStories.slice(0, 20)
+      }
+      
+      setStories(storiesToDisplay)
+    } catch (error) {
+      console.error('Failed to fetch from backend:', error)
+      
+      // Fallback to local FALLBACK_STORIES if API fails
+      console.warn('Falling back to local stories')
+      let fallback = FALLBACK_STORIES.slice()
+      
       if (selectedCategory !== 'all') {
         const categoryStories = fallback.filter(s => s.category === selectedCategory)
         if (categoryStories.length > 0) {
@@ -2210,44 +2340,16 @@ function App() {
         }
       }
       
-      // Filter by interests
-      if (userInterests && userInterests.length > 0 && selectedCategory === 'all') {
-        const interestSet = new Set(userInterests)
-        const interestStories = fallback.filter(s => interestSet.has(s.category))
-        if (interestStories.length > 0) {
-          fallback = interestStories
-        }
-      }
-      
-      // Last resort - all stories
       if (fallback.length === 0) {
         fallback = FALLBACK_STORIES.slice()
       }
       
-      // Shuffle for variety on each refresh
       const shuffled = [...fallback].sort(() => Math.random() - 0.5)
-      console.log('Using', shuffled.length, 'fallback stories')
       setStories(shuffled)
-    } else {
-      // Filter fetched stories by category if needed
-      if (selectedCategory !== 'all') {
-        allStories = allStories.filter(s => s.category === selectedCategory)
-      }
-      
-      // Filter by user interests
-      if (userInterests && userInterests.length > 0 && selectedCategory === 'all') {
-        const interestSet = new Set(userInterests)
-        allStories = allStories.filter(s => interestSet.has(s.category))
-      }
-      
-      // Limit to reasonable number and shuffle
-      const limited = allStories.slice(0, 20).sort(() => Math.random() - 0.5)
-      console.log('Using', limited.length, 'fetched stories')
-      setStories(limited)
+    } finally {
+      setLoading(false)
     }
-    
-    setLoading(false)
-  }, [selectedCategory, userCountry, userInterests, fetchRSSFeed])
+  }, [selectedCategory, userCountry, userInterests, page])
 
   // Load stories on mount or category change
   useEffect(() => {
@@ -2478,12 +2580,7 @@ Description: ${story.originalSummary}`
             <ExplorePage 
               userInterests={userInterests}
               setUserInterests={setUserInterests}
-              userCountry={userCountry}
-              setUserCountry={setUserCountry}
               appTheme={appTheme}
-              setAppTheme={setAppTheme}
-              enableTranslation={enableTranslation}
-              setEnableTranslation={setEnableTranslation}
             />
           </div>
         ) : (
@@ -2549,8 +2646,6 @@ Description: ${story.originalSummary}`
         setUserCountry={setUserCountry}
         appTheme={appTheme}
         setAppTheme={setAppTheme}
-        newsLanguage={newsLanguage}
-        setNewsLanguage={setNewsLanguage}
         enableTranslation={enableTranslation}
         setEnableTranslation={setEnableTranslation}
       />
