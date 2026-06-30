@@ -1,4 +1,4 @@
-// gin window
+// NewsPulse App - Real-time news aggregator with AI enhancements
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 
 // ─── Categories ──────────────────────────────────────────────────────
@@ -2113,9 +2113,9 @@ function LoginScreen({ onLogin }) {
         </div>
 
         <div className="flex gap-2 mb-6">
-          {['login', 'guest'].map(m => (
+          {['login', 'signup', 'guest'].map(m => (
             <button key={m} onClick={() => { setMode(m); setError(''); }} className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${mode === m ? 'bg-blue-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}>
-              {m === 'guest' ? '👤 Guest' : '🔑 Login'}
+              {m === 'guest' ? '👤 Guest' : m === 'login' ? '🔑 Login' : '📝 Sign Up'}
             </button>
           ))}
         </div>

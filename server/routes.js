@@ -319,9 +319,9 @@ router.post('/stories/bulk', authenticate, adminOnly, (req, res) => {
 
   try {
     if (action === 'approve') {
-      db.prepare(`UPDATE stories SET status = 'approved', updatedAt = CURRENT_TIMESTAMP WHERE id IN (${storyIds.map(() => '?').join(',')})`).all(...storyIds);
+      db.prepare(`UPDATE stories SET status = 'approved', updatedAt = CURRENT_TIMESTAMP WHERE id IN (${storyIds.map(() => '?').join(',')})`).run(...storyIds);
     } else if (action === 'reject') {
-      db.prepare(`UPDATE stories SET status = 'rejected', updatedAt = CURRENT_TIMESTAMP WHERE id IN (${storyIds.map(() => '?').join(',')})`).all(...storyIds);
+      db.prepare(`UPDATE stories SET status = 'rejected', updatedAt = CURRENT_TIMESTAMP WHERE id IN (${storyIds.map(() => '?').join(',')})`).run(...storyIds);
     } else {
       db.prepare('DELETE FROM stories WHERE id IN (' + storyIds.map(() => '?').join(',') + ')').run(...storyIds);
     }

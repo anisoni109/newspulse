@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: newspulse-api
+    env: node
+    region: oregon
+    plan: starter
+    buildCommand: cd server && npm install
+    startCommand: cd server && node server.js
+    healthCheckPath: /
+    autoDeploy: true
