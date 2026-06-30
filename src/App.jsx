@@ -1022,8 +1022,8 @@ function NewsCard({ story, appTheme = 'violet', enableTranslation = true }) {
       return
     }
 
-    // Only show translate button if enableTranslation is true
-    if (!enableTranslation) return
+    // Only translate if enableTranslation is true and we don't have a cache hit
+    if (!enableTranslation && !cached) return
 
     setTranslating(true)
     try {
@@ -1595,28 +1595,6 @@ function ExplorePage({
         </div>
       </div>
 
-      {/* Translation Settings */}
-      <div className="bg-white/5 border border-white/10 rounded-2xl p-5 shadow-xl">
-        <h2 className="text-base font-extrabold text-white mb-3 flex items-center gap-2">
-          <span>🌐</span> Translation Settings
-        </h2>
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-xs font-semibold text-white">Enable Hindi Translations</p>
-            <p className="text-[10px] text-gray-500 mt-0.5">Show EN/HI toggle on news cards (requires API call)</p>
-          </div>
-          <button
-            onClick={() => {
-              setEnableTranslation(!enableTranslation)
-              localStorage.setItem('NEWS_ENABLE_TRANSLATION', String(!enableTranslation))
-            }}
-            className={`relative w-12 h-6 rounded-full transition-colors ${enableTranslation ? 'bg-green-500' : 'bg-gray-600'}`}
-          >
-            <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${enableTranslation ? 'translate-x-6' : ''}`} />
-          </button>
-        </div>
-      </div>
-
       {/* Save CTA */}
       <div className="pt-2">
         <p className="text-[10px] text-gray-500 text-center">All preferences are saved automatically to your browser.</p>
@@ -1956,10 +1934,7 @@ function App() {
         }
       }
 
-      // Filter feeds by custom interests if user is on the unified Top Stories / All News tab
-      if (selectedCategory === 'all' && userInterests && userInterests.length > 0) {
-        urlsToFetch = urlsToFetch.filter(item => userInterests.includes(item.category))
-      }
+
 
       // Shuffle proxy order for variety on each refresh
       const shuffledProxies = [...PROXY_URLS].sort(() => Math.random() - 0.5)
@@ -2010,24 +1985,33 @@ function App() {
         return true
       })
 
-      if (allFetched.length === 0) {
+      let finalStories = []
+      
+      if (allFetched.length > 0) {
+        // Shuffle the live fetched stories list to keep it feeling fresh and dynamic on refresh!
+        finalStories = [...allFetched].sort(() => Math.random() - 0.5)
+      } else {
         // Fallback to local database if proxy fetches failed
         console.warn('Feeds failed to resolve. Loading fallback stories.')
         let fallbacks = FALLBACK_STORIES
         if (selectedCategory !== 'all') {
           fallbacks = FALLBACK_STORIES.filter(s => s.category === selectedCategory)
         } else if (userInterests && userInterests.length > 0) {
-          fallbacks = FALLBACK_STORIES.filter(s => userInterests.includes(s.category))
+          // Only filter by interests when category is 'all' and user has saved interests
+          const interestSet = new Set(userInterests)
+          fallbacks = FALLBACK_STORIES.filter(s => interestSet.has(s.category))
+        }
+        
+        if (fallbacks.length === 0) {
+          // If filtering removed all stories, show all fallbacks as last resort
+          fallbacks = FALLBACK_STORIES
         }
         
         // Shuffle the fallback list slightly to keep it feeling fresh on refresh!
-        const randomized = [...fallbacks].sort(() => Math.random() - 0.5)
-        setStories(randomized)
-      } else {
-        // Shuffle the live fetched stories list to keep it feeling fresh and dynamic on refresh!
-        const randomized = [...allFetched].sort(() => Math.random() - 0.5)
-        setStories(randomized)
+        finalStories = [...fallbacks].sort(() => Math.random() - 0.5)
       }
+
+      setStories(finalStories)
     } catch (err) {
       console.warn('Failed to fetch stories:', err)
     } finally {
@@ -2356,14 +2340,6 @@ Description: ${story.originalSummary}`
           This application is a demo RSS feed aggregator. We do not claim any copyright or legal ownership over the articles, images, or content aggregated from external sources.
         </p>
       </footer>
-
-      {/* Settings Modal */}
-      <SettingsModal 
-        isOpen={settingsOpen} 
-        onClose={() => setSettingsOpen(false)}
-        newsLanguage={newsLanguage}
-        setNewsLanguage={setNewsLanguage}
-      />
     </div>
   )
 }
