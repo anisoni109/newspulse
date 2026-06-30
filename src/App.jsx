@@ -1,4 +1,5 @@
-gin windowimport React, { useState, useEffect, useRef, useCallback } from 'react'
+// gin window
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 
 // ─── Categories ──────────────────────────────────────────────────────
 const CATEGORIES = [
