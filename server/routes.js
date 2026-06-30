@@ -101,9 +101,9 @@ router.post('/auth/guest', (req, res) => {
   const token = crypto.randomBytes(24).toString('hex');
   try {
     db.prepare('INSERT INTO users (id, name, password, token) VALUES (?, ?, ?, ?)').run(id, name, 'guest', token);
-    res.json({ id, name, token, message: 'Guest access granted' });
+    res.json({ id, name, token, role: 'user', message: 'Guest access granted' });
   } catch (e) {
-    res.json({ id, name, token, message: 'Guest access granted' });
+    res.json({ id, name, token, role: 'user', message: 'Guest access granted' });
   }
 });
 
