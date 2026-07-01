@@ -2155,10 +2155,6 @@ function App() {
     return saved ? JSON.parse(saved) : null
   })
 
-  if (!user) {
-    return <LoginScreen onLogin={data => { setUser(data); localStorage.setItem('NEWSPULSE_USER', JSON.stringify(data)) }} />
-  }
-
   const [activeTab, setActiveTab] = useState('feed') // 'feed' | 'explore'
   const [stories, setStories] = useState([])
   const [loading, setLoading] = useState(false)
@@ -2529,6 +2525,10 @@ Description: ${story.originalSummary}`
   }
 
   const activeTheme = THEMES.find(t => t.id === appTheme) || THEMES[0]
+
+  if (!user) {
+    return <LoginScreen onLogin={data => { setUser(data); localStorage.setItem('NEWSPULSE_USER', JSON.stringify(data)) }} />
+  }
 
   return (
     <div className="h-[100dvh] w-screen overflow-hidden flex flex-col bg-gradient-to-b from-gray-950 via-slate-950 to-black select-none">
