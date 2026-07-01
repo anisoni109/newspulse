@@ -1,4 +1,6 @@
 require('dotenv').config();
+const path = require('path');
+const fs = require('fs');
 const express = require('express');
 const cors = require('cors');
 const routes = require('./routes');
@@ -19,6 +21,12 @@ app.use(express.urlencoded({ extended: true }));
 
 // Routes
 app.use('/api', routes);
+
+// Serve Monitor Admin Dashboard STATIC files mounted at /monitor
+const monitorDistPath = path.join(__dirname, '..', 'MonitorDashboard', 'dist');
+if (fs.existsSync(monitorDistPath)) {
+  app.use(express.static(monitorDistPath));
+}
 
 // Health check
 app.get('/', (req, res) => {
