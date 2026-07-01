@@ -1204,7 +1204,31 @@ function NewsCard({ story, appTheme = 'violet', enableTranslation = true }) {
     // Only translate if enableTranslation is true and we don't have a cache hit
     if (!enableTranslation && !(hindiSummary || story.hindiSummary) && !cached) return
 
-    setTrans
+    setTranslating(true)
+    try {
+      const prompt = `You are a professional Hindi translator. Translate the following news article title and description into proper, complete Hindi sentences written in Devanagari script.
+
+IMPORTANT RULES:
+1. hindiHeadline: Must be a complete headline in Hindi (5-10 words minimum)
+2. hindiSummary: Must be 3-4 complete Hindi sentences totaling at least 60 characters
+3. hindiExtendedSummary: Array of exactly 3 Hindi bullet points, each must be a full sentence (minimum 8 words each)
+4. If the input is short, expand it naturally with relevant context
+5. NEVER return one-word translations - always use complete sentences
+
+Return ONLY valid JSON with these exact keys:
+{
+  "headline": "English headline",
+  "summary": "Detailed English summary paragraph (3-4 sentences)",
+  "extendedSummary": ["Bullet 1", "Bullet 2", "Bullet 3"],
+  "hindiHeadline": "पूरा हिंदी शीर्षक यहाँ लिखें",
+  "hindiSummary": "यहाँ विस्तृत हिंदी सारांश लिखें। कम से कम तीन वाक्य होने चाहिए। प्रत्येक वाक्य पूर्ण होना चाहिए।",
+  "hindiExtendedSummary": ["बुलेट पॉइंट 1 पूर्ण वाक्य", "बुलेट पॉइंट 2 पूर्ण वाक्य", "बुलेट पॉइंट 3 पूर्ण वाक्य"]
+}
+
+DO NOT include any markdown, code blocks, or explanations. Return ONLY raw JSON.
+
+Title: ${story.originalHeadline}
+Description: ${story.originalSummary}`
 
       const response = await fetch('https://devtoolbox-api.devtoolbox-api.workers.dev/ai/generate', {
         method: 'POST',
