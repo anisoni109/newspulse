@@ -608,7 +608,16 @@ const COUNTRY_CATEGORY_FEEDS = {
 }
 
 const getApiUrl = () => {
-  return localStorage.getItem('NEWS_API_URL') || 'http://localhost:3000/api'
+  return localStorage.getItem('NEWS_API_URL') || 'https://moody-friends-think.loca.lt/api'
+}
+
+// ─── Custom Fetch Wrapper with Automatic LocalTunnel Bypass Header ──
+const secureFetch = async (url, options = {}) => {
+  const mergedHeaders = {
+    ...options.headers,
+    'Bypass-Tunnel-Reminder': 'true',
+  }
+  return fetch(url, { ...options, headers: mergedHeaders })
 }
 
 // ─── Share Component — shares from your website, not the original article ──
@@ -625,7 +634,7 @@ function ShareButton({ headline, summary, storyId, compact = false }) {
     const text = `${headline}\n\n${summary}\n\nRead more on NewsPulse: ${shareUrl}`
     
     try {
-      await fetch(`${getApiUrl()}/stories/${storyId}/share`, { method: 'POST' })
+      await secureFetch(`${getApiUrl()}/stories/${storyId}/share`, { method: 'POST' })
     } catch (e) {
       console.warn("Failed to report share to backend:", e)
     }
@@ -692,7 +701,7 @@ function VoteButtons({ storyId, initialUpvotes = 0, initialDownvotes = 0, compac
     }
 
     try {
-      const res = await fetch(`${getApiUrl()}/stories/${storyId}/vote`, {
+      const res = await secureFetch(`${getApiUrl()}/stories/${storyId}/vote`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ voteType, userId })
@@ -785,7 +794,7 @@ function CommentsModal({ isOpen, onClose, storyId }) {
     const loadComments = async () => {
       try {
         setLoading(true)
-        const res = await fetch(`${getApiUrl()}/stories/${storyId}/comments`)
+        const res = await secureFetch(`${getApiUrl()}/stories/${storyId}/comments`)
         if (res.ok) {
           const data = await res.json()
           if (active) setComments(data)
@@ -827,7 +836,7 @@ function CommentsModal({ isOpen, onClose, storyId }) {
     setNewComment('')
 
     try {
-      const res = await fetch(`${getApiUrl()}/stories/${storyId}/comment`, {
+      const res = await secureFetch(`${getApiUrl()}/stories/${storyId}/comment`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: localComment.text, userId: localComment.userId })
@@ -911,7 +920,7 @@ function CommentsModal({ isOpen, onClose, storyId }) {
 
 // ─── Settings Modal Component ──────────────────────────────────────
 function SettingsModal({ isOpen, onClose, userCountry, setUserCountry, appTheme, setAppTheme, newsLanguage, setNewsLanguage, enableTranslation, setEnableTranslation, autoPublishStories, setAutoPublishStories }) {
-  const [apiUrl, setApiUrl] = useState(() => localStorage.getItem('NEWS_API_URL') || 'http://localhost:3000/api')
+  const [apiUrl, setApiUrl] = useState(() => localStorage.getItem('NEWS_API_URL') || 'https://moody-friends-think.loca.lt/api')
 
   if (!isOpen) return null
 
@@ -2084,15 +2093,15 @@ function LoginScreen({ onLogin }) {
     try {
       let data
       if (mode === 'guest') {
-        const res = await fetch(`${getApiUrl()}/auth/guest`, { method: 'POST', headers: { 'Content-Type': 'application/json' } })
+        const res = await secureFetch(`${getApiUrl()}/auth/guest`, { method: 'POST', headers: { 'Content-Type': 'application/json' } })
         data = await res.json()
         if (!res.ok) throw new Error(data.error)
       } else if (mode === 'login') {
-        const res = await fetch(`${getApiUrl()}/auth/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, password }) })
+        const res = await secureFetch(`${getApiUrl()}/auth/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, password }) })
         data = await res.json()
         if (!res.ok) throw new Error(data.error)
       } else {
-        const res = await fetch(`${getApiUrl()}/auth/signup`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, password }) })
+        const res = await secureFetch(`${getApiUrl()}/auth/signup`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, password }) })
         data = await res.json()
         if (!res.ok) throw new Error(data.error)
       }
@@ -2281,7 +2290,7 @@ function App() {
         params.set('category', selectedCategory)
       }
       
-      const response = await fetch(`${getApiUrl()}/stories?${params}`)
+      const response = await secureFetch(`${getApiUrl()}/stories?${params}`)
       
       if (!response.ok) {
         throw new Error(`API error: ${response.status}`)
