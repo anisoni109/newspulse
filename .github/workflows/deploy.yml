@@ -26,11 +26,25 @@ jobs:
           node-version: 20
           cache: 'npm'
 
-      - name: Install dependencies
+      - name: Install dependencies (root)
         run: npm install --frozen-lockfile
 
-      - name: Build
-        run: npm run build
+      - name: Install dependencies (Monitor Dashboard)
+        working-directory: MonitorDashboard
+        run: npm install --frozen-lockfile
+
+      - name: Build NewsPulse and Monitor Dashboard
+        run: |
+          npm run build
+          cd MonitorDashboard && npm run build && cd ..
+
+      - name: Merge Monitor into dist/monitor
+        run: |
+          mkdir -p dist/monitor
+          # Copy Monitor index.html to dist/monitor
+          cp MonitorDashboard/dist/index.html dist/monitor/index-monitor.html
+          # Copy Monitor assets
+          cp -r MonitorDashboard/dist/assets/* dist/assets/
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
