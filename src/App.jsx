@@ -2084,15 +2084,15 @@ function LoginScreen({ onLogin }) {
     try {
       let data
       if (mode === 'guest') {
-        const res = await fetch('/api/auth/guest', { method: 'POST', headers: { 'Content-Type': 'application/json' } })
+        const res = await fetch(`${getApiUrl()}/auth/guest`, { method: 'POST', headers: { 'Content-Type': 'application/json' } })
         data = await res.json()
         if (!res.ok) throw new Error(data.error)
       } else if (mode === 'login') {
-        const res = await fetch('/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, password }) })
+        const res = await fetch(`${getApiUrl()}/auth/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, password }) })
         data = await res.json()
         if (!res.ok) throw new Error(data.error)
       } else {
-        const res = await fetch('/api/auth/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, password }) })
+        const res = await fetch(`${getApiUrl()}/auth/signup`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, password }) })
         data = await res.json()
         if (!res.ok) throw new Error(data.error)
       }

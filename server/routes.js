@@ -594,7 +594,14 @@ function callAI(options) {
 
       function localOllama() {
         var payload = JSON.stringify({ messages: [{ role: 'user', content: defOpts.userPrompt || body.prompt }], model: defOpts.model, max_tokens: defOpts.max_tokens, temperature: defOpts.temperature });
-        var req = http.request({ hostname: ollamaHost, port: 11434, path: '/v1/chat/completions', method: 'POST', headers: { 'Content-Type': 'application/json' }, timeout: 120e3 }, function(res) {
+        
+        // Robust split of host & port to prevent ENOTFOUND localhost:11434 errors
+        var parsedHost = ollamaHost.replace(/^https?:\/\//, '');
+        var hostParts = parsedHost.split(':');
+        var hostname = hostParts[0];
+        var port = hostParts[1] ? parseInt(hostParts[1]) : 11434;
+
+        var req = http.request({ hostname: hostname, port: port, path: '/v1/chat/completions', method: 'POST', headers: { 'Content-Type': 'application/json' }, timeout: 120e3 }, function(res) {
           var ch = []; res.on('data', function(c) { ch.push(c); });
           res.on('end', function() {
             try { resolve(JSON.parse(Buffer.concat(ch).toString())?.choices?.[0]?.message.content || '...OllamaResponseError' ); } catch (e) { reject(e); }
