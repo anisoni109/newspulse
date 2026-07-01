@@ -611,8 +611,12 @@ const RENDER_API = 'https://newspulse-458n.onrender.com/api'
 
 const getApiUrl = () => {
   const stored = localStorage.getItem('NEWS_API_URL')
+  // Auto-clear stale tunnel URLs (loca.lt, ngrok, etc.) so Render takes over
+  if (stored && (stored.includes('loca.lt') || stored.includes('ngrok') || stored.includes('localhost') && window.location.hostname !== 'localhost')) {
+    localStorage.removeItem('NEWS_API_URL')
+    return RENDER_API
+  }
   if (stored) return stored
-  // Automatically use Render when running on GitHub Pages or any non-localhost origin
   const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
   return isLocal ? 'http://localhost:3000/api' : RENDER_API
 }
