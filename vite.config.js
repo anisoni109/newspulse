@@ -1,9 +1,10 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
-export default defineConfig(({ command }) => ({
+// For GitHub Pages: use relative paths ('.') so all pages load correctly at any depth
+export default defineConfig({
   plugins: [react()],
-  base: command === 'build' ? '/newspulse/' : '/',
+  base: './',
   server: {
     port: 5173,
     proxy: {
@@ -21,4 +22,4 @@ export default defineConfig(({ command }) => ({
   build: {
     outDir: 'dist'
   }
-}))
+})
