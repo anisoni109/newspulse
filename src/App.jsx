@@ -1158,10 +1158,10 @@ function NewsCard({ story, appTheme = 'violet', enableTranslation = true }) {
   const [hindiExtendedSummary, setHindiExtendedSummary] = useState(story.hindiExtendedSummary || [])
 
   const activeTheme = THEMES.find(t => t.id === appTheme) || THEMES[0]
-  const storyId = story.id || contentHash(story.originalHeadline + story.originalSummary)
+  const storyId = story.id || contentHash((story.originalHeadline || story.headline) + (story.originalSummary || story.summary))
 
   // Content-based cache key for faster lookups (works even if link changes)
-  const translationCacheKey = `trans_${contentHash(story.originalHeadline + story.originalSummary)}`
+  const translationCacheKey = `trans_${contentHash((story.originalHeadline || story.headline) + (story.originalSummary || story.summary))}`
 
   const handleTranslate = async (targetLang) => {
     if (targetLang === 'en') {
@@ -1227,8 +1227,8 @@ Return ONLY valid JSON with these exact keys:
 
 DO NOT include any markdown, code blocks, or explanations. Return ONLY raw JSON.
 
-Title: ${story.originalHeadline}
-Description: ${story.originalSummary}`
+Title: ${story.originalHeadline || story.headline}
+Description: ${story.originalSummary || story.summary}`
 
       const response = await fetch('https://devtoolbox-api.devtoolbox-api.workers.dev/ai/generate', {
         method: 'POST',
@@ -1318,8 +1318,8 @@ Return ONLY valid JSON:
 
 NO markdown, NO explanations. ONLY raw JSON.
 
-Title: ${story.originalHeadline}
-Description: ${story.originalSummary}`
+Title: ${story.originalHeadline || story.headline}
+Description: ${story.originalSummary || story.summary}`
 
           const response = await fetch('https://devtoolbox-api.devtoolbox-api.workers.dev/ai/generate', {
             method: 'POST',
@@ -2390,8 +2390,8 @@ function App() {
 "hindiSummary" (Hindi translation of the summary paragraph),
 "hindiExtendedSummary" (an array of 3 key Hindi bullet point facts/metrics).
 Do not return any other text, explanations, or code blocks. Just raw JSON.
-Title: ${story.originalHeadline}
-Description: ${story.originalSummary}`
+Title: ${story.originalHeadline || story.headline}
+Description: ${story.originalSummary || story.summary}`
 
             const controller = new AbortController()
             const timeoutId = setTimeout(() => controller.abort(), 8000)
@@ -2475,7 +2475,7 @@ Description: ${story.originalSummary}`
               failedLinksRef.current.add(story.link)
             }
           } catch (error) {
-            console.warn(`Background AI enhancement failed for: ${story.originalHeadline}`, error)
+            console.warn(`Background AI enhancement failed for: ${story.originalHeadline || story.headline}`, error)
             failedLinksRef.current.add(story.link)
           }
         }
