@@ -577,6 +577,7 @@ function callAI(options) {
     if (!body) body = {};
     var modelOverride = (options && options.model) || 'qwen3.5:latest';
     var hostOverride = (options && options.host) || process.env.OLLAMA_HOST || 'localhost';
+    var isRender = process.env.RENDER === 'true';
     var defOpts = Object.assign({
       model: modelOverride, max_tokens: parseInt(body.tokens || body.maxTokens || 2000), temperature: 0.7
     }, body);
@@ -584,12 +585,18 @@ function callAI(options) {
     return new Promise(function(resolve, reject) {
       var ollamaHost = hostOverride;
 
-      if (body.aiProvider === 'cloud_free') {
+      // On Render, always use cloud_free since there's no local Ollama
+      if (body.aiProvider === 'cloud_free' || isRender) {
         fetch('https://devtoolbox-api.devtoolbox-api.workers.dev/ai/generate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ prompt: defOpts.userPrompt || body.prompt })
-        }).then(function(res) { return res.json(); }).then(function(data) { resolve((data && data.response) || '<response failed>'); }).catch(function() { reject(new Error('Cloud AI error')); });
+        }).then(function(res) { return res.json(); }).then(function(data) {
+          var response = data && data.response;
+          if (typeof response === 'string') resolve(response);
+          else if (typeof response === 'object') resolve(JSON.stringify(response));
+          else resolve('<response failed>');
+        }).catch(function(err) { reject(new Error('Cloud AI error: ' + err.message)); });
       } else { localOllama(); }
 
       function localOllama() {
