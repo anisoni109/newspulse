@@ -607,7 +607,7 @@ const COUNTRY_CATEGORY_FEEDS = {
   }
 }
 
-const RENDER_API = 'https://newspulse-api.onrender.com/api'
+const RENDER_API = 'https://newspulse-458n.onrender.com/api'
 
 const getApiUrl = () => {
   const stored = localStorage.getItem('NEWS_API_URL')
