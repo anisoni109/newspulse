@@ -2376,7 +2376,17 @@ function App() {
     fetchStories()
   }, [fetchStories])
 
-  // Asynchronous background AI generator loop
+  // Infinite scroll - load more when near bottom (generate fresh batch)
+    useEffect(() => {
+      const observer = new IntersectionObserver(
+        (entries) => { if (entries[0].isIntersecting && !loading) setPage(p => p + 1) },
+        { threshold: 0.5 }
+      )
+      if (observerTarget.current) observer.observe(observerTarget.current)
+      return () => observer.disconnect()
+    }, [loading])
+
+  // Background AI generator loop — processes stories that need enhancement
   useEffect(() => {
     if (stories.length === 0) return
 
@@ -2517,21 +2527,6 @@ Description: ${story.originalSummary || story.summary}`
   }, [stories])
 
   // Infinite scroll - load more when near bottom (generate fresh batch)
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => { if (entries[0].isIntersecting && !loading) setPage(p => p + 1) },
-      { threshold: 0.5 }
-    )
-    if (observerTarget.current) observer.observe(observerTarget.current)
-    return () => observer.disconnect()
-  }, [loading])
-
-  // When page increases, fetch again for fresh content
-  useEffect(() => {
-    if (page > 0 && !loading) {
-      fetchStories()
-    }
-  }, [page, fetchStories, loading])
 
   const handleRefresh = useCallback(() => {
     setRefreshing(true)
