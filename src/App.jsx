@@ -608,7 +608,7 @@ const COUNTRY_CATEGORY_FEEDS = {
 }
 
 const getApiUrl = () => {
-  return localStorage.getItem('NEWS_API_URL') || 'https://moody-friends-think.loca.lt/api'
+  return localStorage.getItem('NEWS_API_URL') || 'https://newspulse-api-system.loca.lt/api'
 }
 
 // ─── Custom Fetch Wrapper with Automatic LocalTunnel Bypass Header ──
@@ -920,7 +920,7 @@ function CommentsModal({ isOpen, onClose, storyId }) {
 
 // ─── Settings Modal Component ──────────────────────────────────────
 function SettingsModal({ isOpen, onClose, userCountry, setUserCountry, appTheme, setAppTheme, newsLanguage, setNewsLanguage, enableTranslation, setEnableTranslation, autoPublishStories, setAutoPublishStories }) {
-  const [apiUrl, setApiUrl] = useState(() => localStorage.getItem('NEWS_API_URL') || 'https://moody-friends-think.loca.lt/api')
+  const [apiUrl, setApiUrl] = useState(() => localStorage.getItem('NEWS_API_URL') || 'https://newspulse-api-system.loca.lt/api')
 
   if (!isOpen) return null
 
