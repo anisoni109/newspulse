@@ -3,8 +3,13 @@ services:
     name: newspulse-api
     env: node
     region: oregon
-    plan: starter
+    plan: free
     buildCommand: cd server && npm install
     startCommand: cd server && node server.js
     healthCheckPath: /
     autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: RENDER
+        value: true

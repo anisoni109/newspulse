@@ -1,7 +1,13 @@
 const Database = require('better-sqlite3');
 const path = require('path');
+const fs = require('fs');
 
-const dbPath = path.join(__dirname, 'newspulse.db');
+// On Render (cloud) store DB in /tmp so it has write permission.
+// On local dev, store next to server files.
+const isRender = !!process.env.RENDER;
+const dbDir = isRender ? '/tmp' : __dirname;
+const dbPath = path.join(dbDir, 'newspulse.db');
+console.log('[db] Using database at:', dbPath);
 const db = new Database(dbPath);
 
 // Enable WAL mode for better performance

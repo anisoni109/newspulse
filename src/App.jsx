@@ -607,8 +607,14 @@ const COUNTRY_CATEGORY_FEEDS = {
   }
 }
 
+const RENDER_API = 'https://newspulse-api.onrender.com/api'
+
 const getApiUrl = () => {
-  return localStorage.getItem('NEWS_API_URL') || 'https://newspulse-api-system.loca.lt/api'
+  const stored = localStorage.getItem('NEWS_API_URL')
+  if (stored) return stored
+  // Automatically use Render when running on GitHub Pages or any non-localhost origin
+  const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  return isLocal ? 'http://localhost:3000/api' : RENDER_API
 }
 
 // ─── Custom Fetch Wrapper with Automatic LocalTunnel Bypass Header ──
@@ -920,7 +926,7 @@ function CommentsModal({ isOpen, onClose, storyId }) {
 
 // ─── Settings Modal Component ──────────────────────────────────────
 function SettingsModal({ isOpen, onClose, userCountry, setUserCountry, appTheme, setAppTheme, newsLanguage, setNewsLanguage, enableTranslation, setEnableTranslation, autoPublishStories, setAutoPublishStories }) {
-  const [apiUrl, setApiUrl] = useState(() => localStorage.getItem('NEWS_API_URL') || 'https://newspulse-api-system.loca.lt/api')
+  const [apiUrl, setApiUrl] = useState(() => localStorage.getItem('NEWS_API_URL') || '')
 
   if (!isOpen) return null
 
@@ -1109,9 +1115,13 @@ function SettingsModal({ isOpen, onClose, userCountry, setUserCountry, appTheme,
                 value={apiUrl}
                 onChange={(e) => {
                   setApiUrl(e.target.value)
-                  localStorage.setItem('NEWS_API_URL', e.target.value)
+                  if (e.target.value.trim()) {
+                    localStorage.setItem('NEWS_API_URL', e.target.value)
+                  } else {
+                    localStorage.removeItem('NEWS_API_URL')
+                  }
                 }}
-                placeholder="http://localhost:3000/api"
+                placeholder={`Auto: ${RENDER_API}`}
                 className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
               />
             </div>
